@@ -1,65 +1,106 @@
 # Scripts for the prow job periodic-dind-build
 
+The goal of these scripts and the associated prow job is to automate the process of building the docker-ce and containerd packages (as well as the static binaries) for ppc64le and of testing them. The packages would then be shared with the Docker team and be available on the https://download.docker.com package repositories.
+
+To build these packages, we use the [docker-ce-packaging](https://github.com/docker/docker-ce-packaging) and the [containerd-packaging](https://github.com/docker/containerd-packaging/) repositories.
+
 ## [Prow job](https://github.com/florencepascual/test-infra/blob/master/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml)
 
-The prow job is supposed to build the docker-ce and containerd packages for ppc64le and test them. 
-We also get the environment variable file containing the versions of docker and containerd we want to build, from our internal COS Bucket and push the packages to the same COS Bucket.
+The prow job is at the moment a periodic one, that is supposed to build the docker-ce and containerd packages, and the static binaries for ppc64le and test them. 
+For the moment, it is a semi-automated process, since the prow job is a periodic one, meaning that it is not a presubmit or postsubmit prow job triggered by a new tag on [docker/docker-ce-packaging](https://github.com/docker/docker-ce-packaging). However, we cannot yet implement a presubmit or postsubmit prow job, for two reasons : there are no tags yet and there are no webhooks to which we have access.
+To get around the lack of tags, we get an environment variable file containing the versions of docker and containerd we want to build, from our internal COS Bucket.
 
-If the prow job clones itself this repo, it will be located at : /home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build
+1. [Start the docker daemon](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prowjob-periodic-dind-build.sh#L17-L19)
+2. [Access to the internal COS Bucket for the environment variable file and the dockertest repository](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prowjob-periodic-dind-build.sh#L26-L28)
+3. [Build the packages](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prowjob-periodic-dind-build.sh#L34-L36)
+4. [Test the packages](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prowjob-periodic-dind-build.sh#L38-L40)
+5. [Check the errors.txt file for errors](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prowjob-periodic-dind-build.sh#L42-L45)
+6. [Push to COS Buckets](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prowjob-periodic-dind-build.sh#L47-L49)
 
-1. [Start the docker daemon](https://github.com/florencepascual/test-infra/blob/e60be4741e286b867a08286ae9515b14bdc96825/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml#L58)
-2. [Access to the internal COS Bucket for the environment variable file and the dockertest repository](https://github.com/florencepascual/test-infra/blob/e60be4741e286b867a08286ae9515b14bdc96825/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml#L68)
-3. [Get the list of distros we want to build](https://github.com/florencepascual/test-infra/blob/e60be4741e286b867a08286ae9515b14bdc96825/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml#L101)
-4. [Build the packages](https://github.com/florencepascual/test-infra/blob/e60be4741e286b867a08286ae9515b14bdc96825/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml#L138)
-5. [Test the packages](https://github.com/florencepascual/test-infra/blob/e60be4741e286b867a08286ae9515b14bdc96825/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml#L167)
-6. [Push to COS Buckets](https://github.com/florencepascual/test-infra/blob/e60be4741e286b867a08286ae9515b14bdc96825/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml#L183)
+### The 8 scripts in detail
 
-## 7 scripts :
+- [dockerd-starting.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/dockerd-starting.sh)
 
-- dockerd-starting.sh
-This script runs the dockerd-entrypoint.sh and then checks if the docker daemon has started and is running.
+This script runs the **dockerd-entrypoint.sh** and then checks if the docker daemon has started and is running.
 
-- get_env.sh
-This script gets the environment variable file, containing the version of docker-ce and containerd we want to build, and also the dockertest repository we use for the tests.
+- [get_env.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/get_env.sh)
 
-- build.sh
-This script builds the version of docker-ce and containerd we specified in the environment variable file, and runs build_static.sh to build the static binaries.
+This script gets from our internal COS bucket, the environment variable file, containing the version of docker-ce and containerd we want to build, and also the dockertest repository we use for the tests. 
+If we put the CONTAINERD_VERS variable to 0, it means there are no new version of containerd in the 1.4 branch, and the **build.sh** script won't build it again. For test purposes, the script also copies the last version of containerd we have built and stored in the COS bucket, in the workspace.
 
-- build_static.sh
-This script builds the static binaries.
+- [build.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/build.sh)
 
-- test.sh
-This script sets up the tests for the packages. In this script, we run another docker container, in which we run test_launch.sh. It also generates a errors.txt file with a summary of the tests for each distro and the exit codes of each test.
+This script builds the version of docker-ce and containerd we specified in the environment variable file, and runs **build_static.sh** in a docker to build the static binaries.
 
-- test_launch.sh
-This script is called in a for loop in the test.sh. This launches the tests for every distro we have built.
+- [build_static.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/build_static.sh)
 
-- check_tests.sh
-This script checks out the errors.txt, generated by the test.sh, if there are any errors in the tests of the packages.
+This script builds the static binaries and rename them (removes the version and adds ppc64le).
 
-- push_COS.sh
+- [test.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test.sh)
+
+This script sets up the tests for both the docker-ce and containerd packages and the static binaries. In this script, for each distribution, we build an image, where we install the newly built packages. We then run a docker based on this said image, in which we run **test_launch.sh**. 
+We do this for each distribution, but also both for the docker-ce packages and the static binaries.
+It generates an **errors.txt** file with a summary of all tests, containing the exit codes of each test. 
+
+- [test_launch.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test_launch.sh)
+
+This script is called in the **test.sh**. This runs the tests for every distro we have built.
+
+- [check_tests.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/check_tests.sh)
+
+This script checks out the **errors.txt**, generated by the test.sh, if there are any errors in the tests of the packages.
+
+- [push_COS.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/push_COS.sh)
+
 This script pushes the packages built, the tests and the log to our internal COS Bucket, it does not push anything to the COS Bucket shared with Docker, since it is still a test.
 The goal would be to push to our internal COS bucket, whether there are any errors or not, and to push to the COS Bucket shared with Docker, only if there are no errors.
 
-## [3 images :](https://github.com/florencepascual/test-infra/tree/master/images/docker-in-docker)
+### The 5 images in detail
 
-- dind-docker-build
-This Dockerfile is used for getting a docker-in-docker container. It is used for the basis of the prow job, as well as for the container building the packages and the one testing the packages.
+- [dind-docker-build](https://github.com/florencepascual/test-infra/blob/master/images/docker-in-docker/Dockerfile)
 
-- test-DEBS and test-RPMS
-These two Dockerfiles are used in the test part. Depending on the distro type (debs or rpms), we use them to build a container to test the packages and launch test_launch.sh
+This Dockerfile is used for getting a docker-in-docker container. It is used for the basis of the prow job, as well as for the container building the packages and the one testing the packages. It also installs s3fs to get directly access to the COS buckets.
+
+- [test-DEBS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-DEBS/Dockerfile) and [test-RPMS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-RPMS/Dockerfile)
+
+These two Dockerfiles are used for testing the docker-ce and containerd packages. Depending on the distro type (debs or rpms), we use them to build a container to test the packages and run **test_launch.sh**.
+
+- [test-static-DEBS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-static-DEBS/Dockerfile) and [test-static-RPMS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-static-RPMS/Dockerfile)
+
+These two Dockerfiles are used for testing the static binaries. Like the two aforementioned Dockerfiles : depending on the distro type (debs or rpms), we use them to build a container to test the packages and run **test_launch.sh**. 
 
 
-How to test the scripts manually IN A POD :
-
-0. Set up the pod
+## How to test the scripts manually in a pod
+### Set up the secrets and the pod
 
 You need first to set up the secrets docker-token and secret-s3 with kubectl.
 
 ```bash
-touch pod.yaml
+# docker-token
+docker login
+kubectl create secret generic docker-token \
+    --from-file=.dockerconfigjson=$HOME/.docker/config.json \
+    --type=kubernetes.io/dockerconfigjson
 ```
-Add the following to the pod.yaml
+Add the following to **secret-s3.yaml**, with the secret :
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-s3
+type: Opaque
+data:
+  password: 
+```
+```bash
+kubectl apply -f secret-s3.yaml
+```
+You also need the **dockerd-entrypoint.sh**, which is the script that starts the docker daemon :
+```
+wget -O /usr/local/bin/dockerd-entrypoint.sh https://raw.githubusercontent.com/docker-library/docker/094faa88f437cafef7aeb0cc36e75b59046cc4b9/20.10/dind/dockerd-entrypoint.sh
+chmod +x /usr/local/bin/dockerd-entrypoint.sh
+```
+Then, you need to create the pod. Add the following to **pod.yaml** :
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -97,74 +138,134 @@ spec:
     emptyDir: {}
 status: {}  
 ```
-
-```
+```bash
 kubectl apply -f pod.yaml
 kubectl exec -it pod/pod-docker-build -- /bin/bash
 ```
+### Run the scripts
+#### 0. Get the scripts
 
-1. Get the scripts
+```bash
+URL_GITHUB="https://github.com/powercloud/docker-ce-build.git"
 
-```
-git clone https://github.com/florencepascual/docker-ce-build.git
-cp docker-ce-build/prowjob-periodic-dind-build.sh .
-chmod a+x *.sh
-rm -rf docker-ce-build
-nohup bash -x prowjob-periodic-dind-build.sh &> nohup.out &
-```
-
-```
-URL_GITHUB="https://github.com/florencepascual/docker-ce-build.git"
+# get the scripts
+mkdir -p /home/prow/go/src/github.com/ppc64le-cloud
+cd /home/prow/go/src/github.com/ppc64le-cloud
+git clone ${URL_GITHUB}
 
 # path to the scripts 
-PATH_SCRIPTS="/workspace/docker-ce-build"
-export PATH_SCRIPTS
+PATH_SCRIPTS="/home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build"
+LOG="/workspace/prowjob.log"
 
-# clone the directory where the scripts are
-echo "* Git clone *"
-git clone ${URL_GITHUB} ${PATH_SCRIPTS}
+export PATH_SCRIPTS
+export LOG
 
 chmod a+x ${PATH_SCRIPTS}/*.sh
-```
 
-2. Start the docker daemon
+echo "Prow Job to build docker-ce" 2>&1 | tee ${LOG}
+
+# Go to the workdir
+cd /workspace
 ```
-echo "** Starting dockerd **"
+#### 1. Start the docker daemon
+```bash
+echo "** Starting dockerd **" 2>&1 | tee -a ${LOG}
 # Check whether the docker daemon has started
-source ${PATH_SCRIPTS}/dockerd-starting.sh (but maybe comment dockerd-entrypoint.sh, can't run it again)
+# Comment the line calling dockerd-entrypoint.sh in dockerd-starting.sh, because the dockerd-entrypoint.sh is already running.
+source ${PATH_SCRIPTS}/dockerd-starting.sh
 ```
+#### 2. Get the env file and the dockertest repo and the latest built of containerd if we don't want to build containerd
+```bash
+echo "** Set up (env files and dockertest) **" 2>&1 | tee -a ${LOG}
+source ${PATH_SCRIPTS}/get_env.sh
 
-3. Get the environment files and the dockertest
-```
-echo "*** COS Bucket ***"
-${PATH_SCRIPTS}/get_env.sh
 set -o allexport
 source env.list
 source env-distrib.list
 ```
-
-4. Build docker-ce and containerd
+#### 3. Build docker_ce and containerd and the static binaries
+```bash
+echo "*** Build ***" 2>&1 | tee -a ${LOG}
+source ${PATH_SCRIPTS}/build.sh
 ```
-echo "*** ** BUILD ** ***"
-source ${PATH_SCRIPTS}/build.sh 
-```
-
-5. Test the packages
-```
-echo "*** *** TEST *** ***"
+#### 4. Test the packages
+```bash
+echo "*** * Tests * ***" 2>&1 | tee -a ${LOG}
 source ${PATH_SCRIPTS}/test.sh
 ```
-
-6. Check the tests
-```
-echo "*** *** * TESTS CHECK * *** ***"
+#### 5. Check if there are errors in the tests : NOERR or ERR
+```bash
+echo "*** ** Tests check ** ***" 2>&1 | tee -a ${LOG}
 source ${PATH_SCRIPTS}/check_tests.sh
-cat ${PATH_TEST_ERRORS}
-echo ${CHECK_TESTS_BOOL}
+echo "The tests results : ${CHECK_TESTS_BOOL}" 2>&1 | tee -a ${LOG}
 ```
+#### 6. Push to the COS Bucket according to CHECK_TESTS_BOOL
+```bash
+echo "*** *** Push to the COS Buckets *** ***" 2>&1 | tee -a ${LOG}
+source ${PATH_SCRIPTS}/push_COS.sh
+```
+## How to test a prow job
+### Set up a ppc64le cluster
+On a ppc64le machine : 
+```bash
+# Stop the cluster
+sudo kubeadm reset
+rm $HOME/.kube/config/admin.conf
+# Start the cluster
+sudo kubeadm init 
+# Set kubeconfig
+mkdir -p $HOME/.kube/config
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config/admin.conf
+export KUBECONFIG=$HOME/.kube/config/admin.conf
+# Check if the cluster is running
+kubectl cluster-info
+# Enable scheduling (https://github.com/calebhailey/homelab/issues/3)
+kubectl taint nodes --all node-role.kubernetes.io/master-
+```
+On an x86 machine:
+```bash
+rm -rf $HOME/.kube/config/admin.conf
+nano $HOME/.kube/config/admin.conf
+# Copy the admin.conf from the ppc64le machine
+export KUBECONFIG=$HOME/.kube/config/admin.conf
+# Check if the cluster is running
+kubectl cluster-info
+```
+On either of these machines, where the ppc64le cluster is running, configure the secrets :
+```bash
+# docker-token
+docker login
+kubectl create secret generic docker-token \
+    --from-file=.dockerconfigjson=$HOME/.docker/config.json \
+    --type=kubernetes.io/dockerconfigjson
+```
+Add the following to **secret-s3.yaml**, with the secret :
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-s3
+type: Opaque
+data:
+  password: 
+```
+```bash
+kubectl apply -f secret-s3.yaml
+```
+You also need the **dockerd-entrypoint.sh**, which is the script that starts the docker daemon :
+```bash
+wget -O /usr/local/bin/dockerd-entrypoint.sh https://raw.githubusercontent.com/docker-library/docker/094faa88f437cafef7aeb0cc36e75b59046cc4b9/20.10/dind/dockerd-entrypoint.sh
+chmod +x /usr/local/bin/dockerd-entrypoint.sh
+```
+### Run the prow job on a x86 machine
+On the x86 machine :
+```bash
+# Get the ppc64le-cloud/test-infra repository
+git clone https://github.com/florencepascual/test-infra.git
+export CONFIG_PATH="/home/fpascual/test-infra-test/config/prow/config.yaml" 
+export JOB_CONFIG_PATH="/home/fpascual/test-infra-test/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml"
 
-7.  Push to the COS Bucket (the script will push to the COS Bucket shared with Docker, use it gingerly)
-```
-echo "*** *** ** COS Bucket ** *** ***"
-${PATH_SCRIPTS}/push_COS.sh
+./test-infra-test/hack/test-pj.sh docker-build
 ```
