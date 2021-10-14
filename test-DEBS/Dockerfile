@@ -34,8 +34,6 @@ RUN echo deb;\
 
 COPY bundles-*.tar.gz /workspace/
 COPY *.deb /workspace/
-COPY test_launch.sh /usr/local/bin
-RUN chmod +x /usr/local/bin/test_launch.sh;
 
 RUN set -eux; \
         tar -xvzf bundles-*.tar.gz --wildcards  --strip-components 4 '*.deb' &&\
@@ -69,5 +67,5 @@ RUN set -eux; \
 VOLUME /var/lib/docker
 EXPOSE 2375 2376
 
-ENTRYPOINT ["test_launch.sh"]
+ENTRYPOINT ["/usr/local/bin/test_launch.sh"]
 CMD []

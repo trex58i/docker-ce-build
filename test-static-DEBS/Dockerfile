@@ -30,8 +30,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/* 
 
 COPY *.tgz /workspace/
-COPY test_launch.sh /usr/local/bin
-RUN chmod +x /usr/local/bin/test_launch.sh
 
 RUN set -eux; \
         tar -xvzf docker-ppc64le.tgz &&\
@@ -65,5 +63,5 @@ RUN set -eux; \
 VOLUME /var/lib/docker
 EXPOSE 2375 2376
 
-ENTRYPOINT ["test_launch.sh"]
+ENTRYPOINT ["/usr/local/bin/test_launch.sh"]
 CMD []
