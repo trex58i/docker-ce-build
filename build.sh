@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script building the docker-ce and containerd packages
+# Script building the docker-ce and containerd packages and the static binaries
 
 set -ue
 
@@ -35,7 +35,7 @@ pushd docker-ce-packaging/deb
 patchDockerFiles .
 for DEB in ${DEBS}
 do
-  echo "= Building for: ${DEB} =" 2>&1 | tee -a ${LOG}
+  echo "= Building for ${DEB} =" 2>&1 | tee -a ${LOG}
 
   VERSION=${DOCKER_VERS} make debbuild/bundles-ce-${DEB}-ppc64le.tar.gz
 
@@ -52,7 +52,7 @@ pushd docker-ce-packaging/rpm
 patchDockerFiles .
 for RPM in ${RPMS}
 do
-  echo "== Building for: ${RPM} ==" 2>&1 | tee -a ${LOG}
+  echo "== Building for ${RPM} ==" 2>&1 | tee -a ${LOG}
 
   VERSION=${DOCKER_VERS} make rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz
 
@@ -65,11 +65,11 @@ do
 done
 popd
 
-echo "=== Building static ===" 2>&1 | tee -a ${LOG}
+echo "=== Building static binaries ===" 2>&1 | tee -a ${LOG}
 pushd docker-ce-packaging/static
 
 CONT_NAME=docker-build-static
-docker run -d -v /workspace:/workspace -v /home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build:/home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build --env PATH_SCRIPTS --env LOG --env DOCKER_SECRET_AUTH --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build_static.sh
+docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env PATH_SCRIPTS --env LOG --env DOCKER_SECRET_AUTH --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build_static.sh
 
 status_code="$(docker container wait ${CONT_NAME})"
 if [[ ${status_code} -ne 0 ]]; then
@@ -105,7 +105,7 @@ then
 
   for DISTRO in $DISTROS
   do
-    echo "= Building for: ${DISTRO} =" 2>&1 | tee -a ${LOG}
+    echo "= Building for ${DISTRO} =" 2>&1 | tee -a ${LOG}
     make REF=${CONTAINERD_VERS} docker.io/library/${DISTRO}
     DISTRO_NAME="$(cut -d':' -f1 <<<"${DISTRO}")"
     DISTRO_VERS="$(cut -d':' -f2 <<<"${DISTRO}")"
@@ -122,7 +122,8 @@ then
   echo "== Copying packages to ${DIR_CONTAINERD} ==" 2>&1 | tee -a ${LOG}
   cp -r containerd-packaging/build/* ${DIR_CONTAINERD}
 else
-  echo "Change CONTAINERD_VERS from 0 to the last version we got from the COS Bucket" 2>&1 | tee -a ${LOG}
+  # CONTAINERD_VERS is 0, so we change the environment variable to the version we had in the COS Bucket
+  echo "## Change CONTAINERD_VERS ##" 2>&1 | tee -a ${LOG}
   ls -d /workspace/containerd-*
   if [[ $? -ne 0 ]]
   then
@@ -139,11 +140,11 @@ fi
 ls ${DIR_DOCKER}/*
 if [[ $? -ne 0 ]]
 then
-  # No packages built
+  # No docker-ce packages built
   echo "No packages built for docker" 2>&1 | tee -a ${LOG}
   BOOL_DOCKER=0
 else
-  # Packages built
+  # Docker-ce packages built
   BOOL_DOCKER=1
 fi
 
@@ -151,22 +152,22 @@ fi
 ls ${DIR_CONTAINERD}/*
 if [[ $? -ne 0 ]]
 then
-  # No packages built
+  # No containerd packages built
   echo "No packages built for containerd" 2>&1 | tee -a ${LOG}
   BOOL_CONTAINERD=0
 else
-  # Packages built
+  # Containerd packages built
   BOOL_CONTAINERD=1
 fi
 
 # Check if all packages have been built
 if [[ ${BOOL_DOCKER} -eq 0 ]] || [[ ${BOOL_CONTAINERD} -eq 0 ]]
-# if there is no packages built for docker or no packages built for containerd
 then 
+  # There are no docker-ce and/or no containerd packages built
   echo "No packages built for either docker, or containerd" 2>&1 | tee -a ${LOG}
   exit 1
 elif [[ ${BOOL_DOCKER} -eq 1 ]] && [[ ${BOOL_CONTAINERD} -eq 1 ]]
-# if there are packages built for docker and packages built for containerd
 then
+  # There are docker-ce and containerd packages built
   echo "All packages built" 2>&1 | tee -a ${LOG}
 fi

@@ -1,6 +1,10 @@
 #!/bin/bash
-# script checking that the dockerd daemon has started
+# script calling dockerd-entrypoint that will start the dockerd and then checking that the docker daemon has started
 
+# Start the docker daemon in the background
+bash /usr/local/bin/dockerd-entrypoint.sh &
+
+# Check if the dockerd has started
 TIMEOUT=10
 DAEMON="dockerd"
 i=0
@@ -11,7 +15,7 @@ do
     sleep 2
 done
 
-pid=`/usr/bin/pgrep $DAEMON` 
+pid=`/usr/bin/pgrep $DAEMON`
 
 if [ -z "$pid" ]
 then
@@ -22,14 +26,15 @@ else
     ps -aef | grep docker | grep -v grep
     sleep 10
     ps -aef
-    if ! test -d /root/.docker 
+
+    if ! test -d /root/.docker
     then
-        # docker login : only for tests
+        # Docker login : only for tests
         mkdir /root/.docker
         echo "$DOCKER_SECRET_AUTH" > /root/.docker/config.json
         echo "Docker login" 2>&1 | tee -a ${LOG}
     fi
+
     echo "Launching docker info" 2>&1 | tee -a ${LOG}
     docker info 2>&1 | tee -a ${LOG}
-    
 fi
