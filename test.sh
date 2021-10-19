@@ -22,7 +22,6 @@ cp ${PATH_SCRIPTS}/test_launch.sh /usr/local/bin
 chmod a+x /usr/local/bin/test_launch.sh
 
 # Create the errors.txt file where we will put a summary of the test logs
->>>>>>> Automation of docker builds - scripts
 if ! test -f ${PATH_TEST_ERRORS}
 then
   touch ${PATH_TEST_ERRORS}
