@@ -68,7 +68,7 @@ do
     # Copy the docker-ce packages
     cp /workspace/docker-ce-${DOCKER_VERS}/bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64le.tar.gz .
     # Copy the containerd packages (we have two different configurations depending on the package type)
-    CONTAINER_VERS_2=$(echo ${CONTAINERD_VERS} | cut -d'v' -f2)
+    CONTAINERD_VERS_2=$(echo ${CONTAINERD_VERS} | cut -d'v' -f2)
     if [[ ${PACKTYPE} == "DEBS" ]]
     then
       # For the debian packages, we don't want the dbgsym package
