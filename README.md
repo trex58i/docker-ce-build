@@ -264,8 +264,10 @@ On the x86 machine :
 ```bash
 # Get the ppc64le-cloud/test-infra repository
 git clone https://github.com/florencepascual/test-infra.git
-export CONFIG_PATH="/home/fpascual/test-infra-test/config/prow/config.yaml" 
-export JOB_CONFIG_PATH="/home/fpascual/test-infra-test/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml"
+# Set CONFIG_PATH and JOB_CONFIG_PATH with an absolute path
+export CONFIG_PATH="$(pwd)/test-infra/config/prow/config.yaml" 
+export JOB_CONFIG_PATH="$(pwd)/test-infra/config/jobs/periodic/docker-in-docker/periodic-dind-build.yaml"
 
 ./test-infra-test/hack/test-pj.sh docker-build
 ```
+If you are asked about **Volume "ssh-keys-bot-ssh-secret"**, answer empty.

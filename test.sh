@@ -72,10 +72,10 @@ do
     if [[ ${PACKTYPE} == "DEBS" ]]
     then
       # For the debian packages, we don't want the dbgsym package
-      cp /workspace/containerd-${CONTAINERD_VERS}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io_${CONTAINERD_VERS_2}*_ppc64le.deb .
+      cp /workspace/containerd-${CONTAINERD_VERS}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io_${CONTAINERD_VERS_2}*_ppc64*.deb .
     elif [[ ${PACKTYPE} == "RPMS" ]]
     then
-      cp /workspace/containerd-${CONTAINERD_VERS}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io-${CONTAINERD_VERS_2}*.ppc64le.rpm .
+      cp /workspace/containerd-${CONTAINERD_VERS}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io-${CONTAINERD_VERS_2}*.ppc64*.rpm .
     fi
 
     # Copy the Dockerfile
