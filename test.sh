@@ -17,10 +17,6 @@ then
   mkdir -p "${DIR_TEST}"
 fi
 
-# Copy the test_launch.sh into /usr/local/bin
-cp ${PATH_SCRIPTS}/test_launch.sh /usr/local/bin
-chmod a+x /usr/local/bin/test_launch.sh
-
 # Create the errors.txt file where we will put a summary of the test logs
 if ! test -f ${PATH_TEST_ERRORS}
 then
@@ -66,7 +62,7 @@ do
 
     echo "### # Copying the packages and the dockerfile for ${DISTRO} # ###" 2>&1 | tee -a ${LOG}
     # Copy the docker-ce packages
-    cp /workspace/docker-ce-${DOCKER_VERS}/bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64le.tar.gz .
+    cp /workspace/docker-ce-${DOCKER_VERS}/bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64*.tar.gz .
     # Copy the containerd packages (we have two different configurations depending on the package type)
     CONTAINERD_VERS_2=$(echo ${CONTAINERD_VERS} | cut -d'v' -f2)
     if [[ ${PACKTYPE} == "DEBS" ]]
@@ -81,8 +77,11 @@ do
     # Copy the Dockerfile
     cp ${PATH_DOCKERFILE}-${PACKTYPE}/Dockerfile .
 
-    # Check if we have the docker-ce and containerd packages and the Dockerfile
-    ls bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64le.tar.gz && ls containerd*ppc64*.* && ls Dockerfile
+    # Copy the test_launch.sh
+    cp ${PATH_SCRIPTS}/test_launch.sh .
+
+    # Check if we have the docker-ce and containerd packages and the Dockerfile and the test_launch.sh
+    ls bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64le.tar.gz && ls containerd*ppc64*.* && ls Dockerfile && ls test_launch.sh
     if [[ $? -ne 0 ]]
     then
       # The docker-ce packages and/or the containerd packages and/or the Dockerfile is/are missing
@@ -135,15 +134,17 @@ do
 
     echo "### # Copying the static packages and the dockerfile for ${DISTRO} # ###" 2>&1 | tee -a ${LOG}
     # Copy the static binaries
-    cp /workspace/docker-ce-${DOCKER_VERS}/docker-ppc64le.tgz /workspace/tmp
+    cp /workspace/docker-ce-${DOCKER_VERS}/docker-ppc64le.tgz .
     # Copy the Dockerfile
-    cp ${PATH_DOCKERFILE}-static-${PACKTYPE}/Dockerfile /workspace/tmp
-    # Check if we have the static binaries and Dockerfile
-    ls docker-ppc64le.tgz && ls Dockerfile
+    cp ${PATH_DOCKERFILE}-static-${PACKTYPE}/Dockerfile .
+    # Copy the test_launch.sh
+    cp ${PATH_SCRIPTS}/test_launch.sh .
+    # Check if we have the static binaries and Dockerfile and the test_launch.sh
+    ls docker-ppc64le.tgz && ls Dockerfile && ls test_launch.sh
     if [[ $? -ne 0 ]]
     then
       # The static binaries and/or the Dockerfile is/are missing
-      echo "The static binaries and/or the Dockerfile is/are missing" 2>&1 | tee -a ${LOG}
+      echo "The static binaries and/or the Dockerfile and/or the test_launch.sh is/are missing" 2>&1 | tee -a ${LOG}
       continue
     else
       # Building the test image
@@ -159,7 +160,7 @@ do
 
       # Running the tests
       echo "### ### Running the tests from the container: ${CONT_NAME_STATIC} ### ###" 2>&1 | tee -a ${LOG}
-      docker run --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name $CONT_NAME_STATIC ${IMAGE_NAME_STATIC}
+      docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name $CONT_NAME_STATIC ${IMAGE_NAME_STATIC}
 
       status_code="$(docker container wait $CONT_NAME_STATIC)"
       if [[ ${status_code} -ne 0 ]]; then
