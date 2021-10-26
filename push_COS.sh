@@ -15,6 +15,10 @@ URL_COS_SHARED="https://s3.us-east.cloud-object-storage.appdomain.cloud"
 COS_BUCKET_PRIVATE="ppc64le-docker"
 URL_COS_PRIVATE="https://s3.us-south.cloud-object-storage.appdomain.cloud"
 
+DIR_COS_PRIVATE="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}"
+
+PATH_DISTROS_MISSING="/workspace/distros-missing.txt"
+
 # Set up the s3 secret if not already configured
 if ! test -f ${PATH_PASSWORD}
 then
@@ -42,8 +46,7 @@ then
     # rm -rf ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/prowjob-*
     echo "${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/prowjob* deleted" 2>&1 | tee -a ${LOG}
 
-    ls -d ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-${CONTAINERD_VERS}
-    if [[ $? -ne 0 ]]
+    if [[ ${CONTAINERD_BUILD} -eq "1" ]]
     then
         # We built a new version of containerd
         # Remove the last version of containerd
@@ -77,8 +80,7 @@ then
     echo "${DIR_DOCKER_SHARED} copied" 2>&1 | tee -a ${LOG}
     echo "Build tag ${DOCKER_BUILD_TAG}" 2>&1 | tee -a ${LOG}
 
-    ls -d ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-*
-    if [[ $? -ne 0 ]]
+    if [[ ${CONTAINERD_BUILD} -eq "1" ]]
     then
         # We built a new version of containerd
         # Copy the new version of containerd into the COS bucket ibm-docker-builds
@@ -95,10 +97,42 @@ then
             CONTAINERD_BUILD_TAG="1"
         fi
         DIR_CONTAINERD=containerd-${DIR_CONTAINERD_VERS}-${CONTAINERD_BUILD_TAG}
+        # mkdir ${PATH_COS}/s3_${COS_BUCKET_SHARED}/${DIR_CONTAINERD}
+
         # Copy the containerd packages to the COS bucket
         # cp -r /workspace/containerd-* ${PATH_COS}/s3_${COS_BUCKET_SHARED}/${DIR_CONTAINERD}
         echo "${DIR_CONTAINERD} copied" 2>&1 | tee -a ${LOG}
         echo "Build tag ${CONTAINERD_BUILD_TAG}" 2>&1 | tee -a ${LOG}
+    else
+        # check if distros-missing.txt exists and if exists, push only the distros mentionned
+        if test -f ${PATH_DISTROS_MISSING}
+        then
+            # We built some distros
+            # Get the directory name ex: "containerd-1.4-9" (version without patch number then build tag)
+            DIR_CONTAINERD_VERS=$(eval "echo ${CONTAINERD_VERS} | cut -d'v' -f2 | cut -d'.' -f1-2")
+
+            ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-*/
+            if [[ $? -eq 0 ]]
+            then
+                CONTAINERD_LAST_BUILD_TAG=$(ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-${DIR_CONTAINERD_VERS}-* | sort --version-sort | tail -1| cut -d'-' -f5)
+                CONTAINERD_BUILD_TAG=$((CONTAINERD_LAST_BUILD_TAG+1))
+            else
+                # If there are no directories yet
+                CONTAINERD_BUILD_TAG="1"
+            fi
+            DIR_CONTAINERD=containerd-${DIR_CONTAINERD_VERS}-${CONTAINERD_BUILD_TAG}
+            # mkdir ${PATH_COS}/s3_${COS_BUCKET_SHARED}/${DIR_CONTAINERD}
+
+            while read -r line
+            do
+                # Copy the containerd package
+                DISTRO_NAME="$(cut -d':' -f1 <<<"${line}")"
+                DISTRO_VERS="$(cut -d':' -f2 <<<"${line}")"
+                # cp -r /workspace/containerd-${CONTAINERD_VERS}/${DISTRO_NAME}/${DISTRO_VERS}
+                echo "${DIR_CONTAINERD} copied" 2>&1 | tee -a ${LOG}
+                echo "Build tag ${CONTAINERD_BUILD_TAG}" 2>&1 | tee -a ${LOG}
+            done
+        fi
     fi
 fi
 
@@ -140,8 +174,7 @@ else
     echo "There are no docker-ce packages." 2>&1 | tee -a ${LOG}
 fi
 
-ls -d ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-*
-if [[ $? -ne 0 ]]
+if [[ ${CONTAINERD_BUILD} -eq "1" ]]
 then
     # We built a new version of containerd
     # Copy the containerd packages to the ppc64le-docker COS bucket

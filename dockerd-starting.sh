@@ -26,9 +26,8 @@ else
     ps -aef | grep docker | grep -v grep
     sleep 10
     ps -aef
-    if ! test -d /root/.docker
+    if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]] && [ ! -d /root/.docker ]
     then
-        # Docker login : only for tests
         mkdir /root/.docker
         echo "$DOCKER_SECRET_AUTH" > /root/.docker/config.json
         echo "Docker login" 2>&1 | tee -a ${LOG}
