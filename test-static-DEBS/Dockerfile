@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/* 
 
 COPY *.tgz /workspace/
+COPY test_launch.sh /usr/local/bin/test_launch.sh
 
 RUN set -eux; \
         tar -xvzf docker-ppc64le.tgz &&\
@@ -51,7 +52,10 @@ ENV DIND_COMMIT ed89041433a031cafc0a0f19cfe573c31688d377
 
 RUN set -eux; \
         wget -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"; \
-        chmod +x /usr/local/bin/dind;
+        wget -O /usr/local/bin/dockerd-entrypoint.sh "https://raw.githubusercontent.com/docker-library/docker/094faa88f437cafef7aeb0cc36e75b59046cc4b9/20.10/dind/dockerd-entrypoint.sh"; \
+        chmod +x /usr/local/bin/dind; \
+        chmod +x /usr/local/bin/dockerd-entrypoint.sh; \
+        chmod +x /usr/local/bin/test_launch.sh;
 
 RUN set -eux; \
 	url="https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-ppc64le.tar.gz";\
