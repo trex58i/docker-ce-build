@@ -112,6 +112,8 @@ do
         echo "Tests done" 2>&1 | tee -a ${LOG}
       fi
 
+      # Copy the logs to the COS bucket
+
       # Stop and remove the docker container
       echo "### ### # Cleanup: ${CONT_NAME} # ### ###"
       docker stop ${CONT_NAME}
@@ -171,6 +173,8 @@ do
         echo "Tests done" 2>&1 | tee -a ${LOG}
       fi
 
+      # Copy the logs to the COS bucket
+
       # Stop and remove the docker container
       echo "### ### # Cleanup: ${CONT_NAME_STATIC} # ### ###" 2>&1 | tee -a ${LOG}
       docker stop ${CONT_NAME_STATIC}
@@ -215,6 +219,8 @@ do
       [[ "$TEST" -eq "0" ]] && [[ "$TEST_STATIC" -eq "0" ]]
       echo "All : $?" 2>&1 | tee -a ${PATH_TEST_ERRORS}
       tail -9 ${PATH_TEST_ERRORS} 2>&1 | tee -a ${LOG}
+
+      # Copy the errors.txt to the COS bucket
     else
       echo "There is no ${TEST_LOG} or ${TEST_LOG_STATIC} file." 2>&1 | tee -a ${LOG}
     fi

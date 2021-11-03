@@ -54,9 +54,9 @@ echo RPMS=\"`cd docker-ce-packaging/rpm && ls -1d centos-* fedora-*`\" >> ${FILE
 source /workspace/${FILE_ENV_DISTRIB}
 
 # Get the containerd directory if we don't want to build containerd
-if [[ ${CONTAINERD_VERS} = "0" ]]
+if [[ ${CONTAINERD_BUILD} = "0" ]]
 then
-    cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-* /workspace/
+    cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-${CONTAINERD_VERS} /workspace/
 fi
 
 # Check if we have the env.list, the env-distrib.list and the dockertest
@@ -66,11 +66,11 @@ then
     exit 1
 else
 # check there are 3 env variables in env.list
-    if grep -Fq "DOCKER_VERS" ${FILE_ENV} && grep -Fq "CONTAINERD_VERS" ${FILE_ENV} && grep -Fq "PACKAGING_REF" ${FILE_ENV}
+    if grep -Fq "DOCKER_VERS" ${FILE_ENV} && grep -Fq "CONTAINERD_BUILD" ${FILE_ENV} && grep -Fq "CONTAINERD_VERS" ${FILE_ENV} && grep -Fq "PACKAGING_REF" ${FILE_ENV}
     then
-        echo "DOCKER_VERS, CONTAINERD_VERS, PACKAGING_REF are in env.list" 2>&1 | tee -a ${LOG}
+        echo "DOCKER_VERS, CONTAINERD_BUILD, CONTAINERD_VERS, PACKAGING_REF are in env.list" 2>&1 | tee -a ${LOG}
     else
-        echo "DOCKER_VERS, CONTAINERD_VERS and/or PACKAGING_REF are not in env.list" 2>&1 | tee -a ${LOG}
+        echo "DOCKER_VERS, CONTAINERD_BUILC, CONTAINERD_VERS and/or PACKAGING_REF are not in env.list" 2>&1 | tee -a ${LOG}
         exit 1
     fi
 # check there are two env variables in env-distrib.list
@@ -83,9 +83,9 @@ else
     fi
 fi
 
-if [[ ${CONTAINERD_VERS} = "0" ]]
+if [[ ${CONTAINERD_BUILD} = "0" ]]
 then
-    if test -d /workspace/containerd-*
+    if test -d /workspace/containerd-${CONTAINERD_VERS}
     then
         echo "The containerd packages have been copied." 2>&1 | tee -a ${LOG}
     else

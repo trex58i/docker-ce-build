@@ -7,13 +7,21 @@ set -o allexport
 source env.list
 source env-distrib.list
 
-echo "# Building docker-ce #" 2>&1 | tee -a ${LOG}
-
 DIR_DOCKER="docker-ce-${DOCKER_VERS}"
 if ! test -d ${DIR_DOCKER}
 then
   mkdir ${DIR_DOCKER}
 fi
+
+DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}"
+if ! test -d ${DIR_COS_BUCKET}
+then
+  mkdir ${DIR_COS_BUCKET}
+fi
+
+PATH_DISTROS_MISSING="/workspace/distros-missing.txt"
+
+echo "# Building docker-ce #" 2>&1 | tee -a ${LOG}
 
 STATIC_LOG=/workspace/static.log
 
@@ -42,6 +50,23 @@ do
   if test -f debbuild/bundles-ce-${DEB}-ppc64le.tar.gz
   then
     echo "${DEB} built" 2>&1 | tee -a ${LOG}
+
+    echo "== Copying packages to ${DIR_DOCKER} and to the internal COS Bucket ==" 2>&1 | tee -a ${LOG}
+    cp -r debbuild/bundles-ce-${DEB}-ppc64le.tar.gz ${DIR_DOCKER}
+    if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
+    then
+      mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
+    fi
+    cp -r debbuild/bundles-ce-${DEB}-ppc64le.tar.gz ${DIR_COS_BUCKET}/${DIR_DOCKER}
+
+    # Checking everything has been copied
+    ls -f ${DIR_DOCKER}/bundles-ce-${DEB}-ppc64le.tar.gz && ls -f ${DIR_COS_BUCKET}/${DIR_DOCKER}/bundles-ce-${DEB}-ppc64le.tar.gz
+    if [[ $? -eq 0 ]]
+    then
+      echo "${DEB} was copied." 2>&1 | tee -a ${LOG}
+    else
+      echo "${DEB} was not copied." 2>&1 | tee -a ${LOG}
+    fi
   else
     echo "${DEB} not built" 2>&1 | tee -a ${LOG}
   fi
@@ -52,20 +77,39 @@ pushd docker-ce-packaging/rpm
 patchDockerFiles .
 for RPM in ${RPMS}
 do
-  echo "== Building for ${RPM} ==" 2>&1 | tee -a ${LOG}
+  echo "= Building for ${RPM} =" 2>&1 | tee -a ${LOG}
 
   VERSION=${DOCKER_VERS} make rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz
 
   if test -f rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz
   then
     echo "${RPM} built" 2>&1 | tee -a ${LOG}
+
+    echo "== Copying packages to ${DIR_DOCKER} and to the internal COS Bucket ==" 2>&1 | tee -a ${LOG}
+    cp -r rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz ${DIR_DOCKER}
+    if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
+    then
+      mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
+    fi
+    cp -r rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz ${DIR_COS_BUCKET}/${DIR_DOCKER}
+
+    # Checking everything has been copied
+    ls -f ${DIR_DOCKER}/bundles-ce-${RPM}-ppc64le.tar.gz && ls -f ${DIR_COS_BUCKET}/${DIR_DOCKER}/bundles-ce-${RPM}-ppc64le.tar.gz
+    if [[ $? -eq 0 ]]
+    then
+      echo "${RPM} was copied." 2>&1 | tee -a ${LOG}
+    else
+      echo "${RPM} was not copied." 2>&1 | tee -a ${LOG}
+    fi
+
+
   else
     echo "${RPM} not built" 2>&1 | tee -a ${LOG}
   fi
 done
 popd
 
-echo "=== Building static binaries ===" 2>&1 | tee -a ${LOG}
+echo "= Building static binaries =" 2>&1 | tee -a ${LOG}
 pushd docker-ce-packaging/static
 
 CONT_NAME=docker-build-static
@@ -78,25 +122,41 @@ if [[ ${status_code} -ne 0 ]]; then
 else
   docker logs ${CONT_NAME} 2>&1 | tee ${STATIC_LOG}
   echo "Static binaries built" 2>&1 | tee -a ${LOG}
-fi
 
+  echo "== Copying packages to ${DIR_DOCKER} and to the internal COS Bucket ==" 2>&1 | tee -a ${LOG}
+  cp build/linux/tmp/*.tgz ${DIR_DOCKER}
+  if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
+  then
+    mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
+  fi
+  cp build/linux/tmp/*.tgz ${DIR_COS_BUCKET}/${DIR_DOCKER}
+
+  # Checking everything has been copied
+  ls -f ${DIR_DOCKER}/*.tgz && ls -f ${DIR_COS_BUCKET}/${DIR_DOCKER}/*.tgz
+  if [[ $? -eq 0 ]]
+  then
+    echo "The static binaries were copied." 2>&1 | tee -a ${LOG}
+    docker stop ${CONT_NAME}
+    docker remove ${CONT_NAME}
+  else
+    echo "The static binaries were not copied." 2>&1 | tee -a ${LOG}
+  fi
+fi
 
 popd
 
-echo "==== Copying packages to ${DIR_DOCKER} ====" 2>&1 | tee -a ${LOG}
+DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}"
 
-cp -r docker-ce-packaging/deb/debbuild/*.tar.gz ${DIR_DOCKER}
-cp -r docker-ce-packaging/rpm/rpmbuild/*.tar.gz ${DIR_DOCKER}
-cp docker-ce-packaging/static/build/linux/tmp/*.tgz ${DIR_DOCKER}
-
-if [[ ${CONTAINERD_VERS} != "0" ]]
-# if CONTAINERD_VERS is equal to a version of containerd we want to build
+if [[ ${CONTAINERD_BUILD} != "0" ]]
 then
   echo "## Building containerd ##" 2>&1 | tee -a ${LOG}
 
-  DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}"
   mkdir ${DIR_CONTAINERD}
-
+  if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
+  then
+    mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
+  fi
+  mkdir ${DIR_COS_BUCKET}/${DIR_CONTAINERD}
   git clone https://github.com/docker/containerd-packaging.git
 
   pushd containerd-packaging
@@ -113,27 +173,83 @@ then
     if test -d build/${DISTRO_NAME}/${DISTRO_VERS}
     then
       echo "${DISTRO} built" 2>&1 | tee -a ${LOG}
+
+      echo "== Copying packages to ${DIR_CONTAINERD} ==" 2>&1 | tee -a ${LOG}
+      cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}
+      cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_COS_BUCKET}/${DIR_CONTAINERD}
+
+      # Checking everything has been copied
+      ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_COS_BUCKET}/${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+      if [[ $? -eq 0 ]]
+      then
+        echo "${DISTRO} was copied." 2>&1 | tee -a ${LOG}
+      else
+        echo "${DISTRO} was not copied." 2>&1 | tee -a ${LOG}
+      fi
     else
       echo "${DISTRO} not built" 2>&1 | tee -a ${LOG}
     fi
   done
 
   popd
-  echo "== Copying packages to ${DIR_CONTAINERD} ==" 2>&1 | tee -a ${LOG}
-  cp -r containerd-packaging/build/* ${DIR_CONTAINERD}
+
 else
-  # CONTAINERD_VERS is 0, so we change the environment variable to the version we had in the COS Bucket
-  echo "## Change CONTAINERD_VERS ##" 2>&1 | tee -a ${LOG}
-  ls -d /workspace/containerd-*
-  if [[ $? -ne 0 ]]
-  then
-    echo "There is no containerd package." 2>&1 | tee -a ${LOG}
-    exit 1
-  fi
-  CONTAINERD_VERS=$(eval "ls -d /workspace/containerd-* | cut -d'-' -f2")
-  echo ${CONTAINER_VERS} 2>&1 | tee -a ${LOG}
-  sed -i 's/CONTAINERD_VERS=0/CONTAINERD_VERS='${CONTAINERD_VERS}'/g' env.list
-  source env.list
+  # Check if in DIR_CONTAINERD there are builds for every distro in env-distrib.list
+  # Create a txt file with the name of the distros missing if there are any
+  echo "= Check containerd =" 2>&1 | tee -a ${LOG}
+  DISTROS="${DEBS//-/:} ${RPMS//-/:}"
+
+  for DISTRO in $DISTROS
+  do
+    DISTRO_NAME="$(cut -d':' -f1 <<<"${DISTRO}")"
+    DISTRO_VERS="$(cut -d':' -f2 <<<"${DISTRO}")"
+
+    if test -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+    then
+      echo "${DISTRO} already built" 2>&1 | tee -a ${LOG}
+    else
+      echo "== ${DISTRO} missing ==" 2>&1 | tee -a ${LOG}
+      if ! test -f ${PATH_DISTROS_MISSING}
+      then
+        touch ${PATH_DISTROS_MISSING}
+      fi
+      # Add the distro to the distros-missing.txt
+      echo "${DISTRO}" >> ${PATH_DISTROS_MISSING}
+
+      # Build the package
+
+      if ! test -d ${DIR_CONTAINERD}
+      then
+        mkdir ${DIR_CONTAINERD}
+      fi
+      if ! test -d containerd-packaging
+      then
+        git clone https://github.com/docker/containerd-packaging.git
+      fi
+      pushd containerd-packaging
+
+      make REF=${CONTAINERD_VERS} docker.io/library/${DISTRO}
+      if test -d build/${DISTRO_NAME}/${DISTRO_VERS}
+      then
+        echo "${DISTRO} built" 2>&1 | tee -a ${LOG}
+        echo "=== Copying packages to ${DIR_CONTAINERD} and to the COS bucket ===" 2>&1 | tee -a ${LOG}
+        cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}/${DISTRO_NAME}
+        cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_COS_BUCKET}/${DIR_CONTAINERD}/${DISTRO_NAME}
+
+        # Checking everything has been copied
+        ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_COS_BUCKET}/${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+        if [[ $? -eq 0 ]]
+        then
+          echo "${DISTRO} was copied." 2>&1 | tee -a ${LOG}
+        else
+          echo "${DISTRO} was not copied." 2>&1 | tee -a ${LOG}
+        fi
+      else
+        echo "${DISTRO} not built" 2>&1 | tee -a ${LOG}
+      fi
+      popd
+    fi
+  done
 fi
 
 # Check if the docker-ce packages have been built
@@ -162,7 +278,7 @@ fi
 
 # Check if all packages have been built
 if [[ ${BOOL_DOCKER} -eq 0 ]] || [[ ${BOOL_CONTAINERD} -eq 0 ]]
-then 
+then
   # There are no docker-ce and/or no containerd packages built
   echo "No packages built for either docker, or containerd" 2>&1 | tee -a ${LOG}
   exit 1
