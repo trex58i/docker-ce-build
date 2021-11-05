@@ -7,10 +7,16 @@ set -o allexport
 source env.list
 source env-distrib.list
 
-DIR_DOCKER="docker-ce-${DOCKER_VERS}"
+DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}"
 if ! test -d ${DIR_DOCKER}
 then
   mkdir ${DIR_DOCKER}
+fi
+
+DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}"
+if ! test -d ${DIR_CONTAINERD}
+then
+  mkdir ${DIR_CONTAINERD}
 fi
 
 DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}"
@@ -19,11 +25,25 @@ then
   mkdir ${DIR_COS_BUCKET}
 fi
 
+DIR_DOCKER_COS="${DIR_COS_BUCKET}/docker-ce-${DOCKER_VERS}"
+
+if ! test -d ${DIR_DOCKER_COS}
+then
+  mkdir ${DIR_DOCKER_COS}
+fi
+
+DIR_CONTAINERD_COS="${DIR_COS_BUCKET}/containerd-${CONTAINERD_VERS}"
+
+if ! test -d ${DIR_CONTAINERD_COS}
+then
+  mkdir ${DIR_CONTAINERD_COS}
+fi
+
 PATH_DISTROS_MISSING="/workspace/distros-missing.txt"
 
-echo "# Building docker-ce #" 2>&1 | tee -a ${LOG}
-
 STATIC_LOG=/workspace/static.log
+
+echo "# Building docker-ce #" 2>&1 | tee -a ${LOG}
 
 # Workaround for builkit cache issue where fedora-32/Dockerfile
 # (or the 1st Dockerfile used by buildkit) is used for all fedora's version
@@ -53,14 +73,10 @@ do
 
     echo "== Copying packages to ${DIR_DOCKER} and to the internal COS Bucket ==" 2>&1 | tee -a ${LOG}
     cp -r debbuild/bundles-ce-${DEB}-ppc64le.tar.gz ${DIR_DOCKER}
-    if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
-    then
-      mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
-    fi
-    cp -r debbuild/bundles-ce-${DEB}-ppc64le.tar.gz ${DIR_COS_BUCKET}/${DIR_DOCKER}
+    cp -r debbuild/bundles-ce-${DEB}-ppc64le.tar.gz ${DIR_DOCKER_COS}
 
     # Checking everything has been copied
-    ls -f ${DIR_DOCKER}/bundles-ce-${DEB}-ppc64le.tar.gz && ls -f ${DIR_COS_BUCKET}/${DIR_DOCKER}/bundles-ce-${DEB}-ppc64le.tar.gz
+    ls -f ${DIR_DOCKER}/bundles-ce-${DEB}-ppc64le.tar.gz && ls -f ${DIR_DOCKER_COS}/bundles-ce-${DEB}-ppc64le.tar.gz
     if [[ $? -eq 0 ]]
     then
       echo "${DEB} was copied." 2>&1 | tee -a ${LOG}
@@ -87,22 +103,16 @@ do
 
     echo "== Copying packages to ${DIR_DOCKER} and to the internal COS Bucket ==" 2>&1 | tee -a ${LOG}
     cp -r rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz ${DIR_DOCKER}
-    if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
-    then
-      mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
-    fi
-    cp -r rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz ${DIR_COS_BUCKET}/${DIR_DOCKER}
+    cp -r rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz ${DIR_DOCKER_COS}
 
     # Checking everything has been copied
-    ls -f ${DIR_DOCKER}/bundles-ce-${RPM}-ppc64le.tar.gz && ls -f ${DIR_COS_BUCKET}/${DIR_DOCKER}/bundles-ce-${RPM}-ppc64le.tar.gz
+    ls -f ${DIR_DOCKER}/bundles-ce-${RPM}-ppc64le.tar.gz && ls -f ${DIR_DOCKER_COS}/bundles-ce-${RPM}-ppc64le.tar.gz
     if [[ $? -eq 0 ]]
     then
       echo "${RPM} was copied." 2>&1 | tee -a ${LOG}
     else
       echo "${RPM} was not copied." 2>&1 | tee -a ${LOG}
     fi
-
-
   else
     echo "${RPM} not built" 2>&1 | tee -a ${LOG}
   fi
@@ -125,19 +135,15 @@ else
 
   echo "== Copying packages to ${DIR_DOCKER} and to the internal COS Bucket ==" 2>&1 | tee -a ${LOG}
   cp build/linux/tmp/*.tgz ${DIR_DOCKER}
-  if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
-  then
-    mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
-  fi
-  cp build/linux/tmp/*.tgz ${DIR_COS_BUCKET}/${DIR_DOCKER}
+  cp build/linux/tmp/*.tgz ${DIR_DOCKER_COS}
 
   # Checking everything has been copied
-  ls -f ${DIR_DOCKER}/*.tgz && ls -f ${DIR_COS_BUCKET}/${DIR_DOCKER}/*.tgz
+  ls -f ${DIR_DOCKER}/*.tgz && ls -f ${DIR_DOCKER_COS}/*.tgz
   if [[ $? -eq 0 ]]
   then
     echo "The static binaries were copied." 2>&1 | tee -a ${LOG}
     docker stop ${CONT_NAME}
-    docker remove ${CONT_NAME}
+    docker rm ${CONT_NAME}
   else
     echo "The static binaries were not copied." 2>&1 | tee -a ${LOG}
   fi
@@ -145,18 +151,10 @@ fi
 
 popd
 
-DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}"
 
 if [[ ${CONTAINERD_BUILD} != "0" ]]
 then
   echo "## Building containerd ##" 2>&1 | tee -a ${LOG}
-
-  mkdir ${DIR_CONTAINERD}
-  if ! test -d ${DIR_COS_BUCKET}/${DIR_DOCKER}
-  then
-    mkdir ${DIR_COS_BUCKET}/${DIR_DOCKER}
-  fi
-  mkdir ${DIR_COS_BUCKET}/${DIR_CONTAINERD}
   git clone https://github.com/docker/containerd-packaging.git
 
   pushd containerd-packaging
@@ -175,11 +173,13 @@ then
       echo "${DISTRO} built" 2>&1 | tee -a ${LOG}
 
       echo "== Copying packages to ${DIR_CONTAINERD} ==" 2>&1 | tee -a ${LOG}
-      cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}
-      cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_COS_BUCKET}/${DIR_CONTAINERD}
+      mkdir ${DIR_CONTAINERD}/${DISTRO_NAME}
+      cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+      mkdir ${DIR_CONTAINERD_COS}/${DISTRO_NAME}
+      cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
 
       # Checking everything has been copied
-      ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_COS_BUCKET}/${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+      ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
       if [[ $? -eq 0 ]]
       then
         echo "${DISTRO} was copied." 2>&1 | tee -a ${LOG}
@@ -217,11 +217,6 @@ else
       echo "${DISTRO}" >> ${PATH_DISTROS_MISSING}
 
       # Build the package
-
-      if ! test -d ${DIR_CONTAINERD}
-      then
-        mkdir ${DIR_CONTAINERD}
-      fi
       if ! test -d containerd-packaging
       then
         git clone https://github.com/docker/containerd-packaging.git
@@ -233,11 +228,13 @@ else
       then
         echo "${DISTRO} built" 2>&1 | tee -a ${LOG}
         echo "=== Copying packages to ${DIR_CONTAINERD} and to the COS bucket ===" 2>&1 | tee -a ${LOG}
-        cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}/${DISTRO_NAME}
-        cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_COS_BUCKET}/${DIR_CONTAINERD}/${DISTRO_NAME}
+        mkdir ${DIR_CONTAINERD}/${DISTRO_NAME}
+        cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+        mkdir ${DIR_CONTAINERD_COS}/${DISTRO_NAME}
+        cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
 
         # Checking everything has been copied
-        ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_COS_BUCKET}/${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+        ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
         if [[ $? -eq 0 ]]
         then
           echo "${DISTRO} was copied." 2>&1 | tee -a ${LOG}
