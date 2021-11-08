@@ -21,7 +21,7 @@ fi
 # Get the number of distros (x2 because we have docker-ce packages but also static binaries)
 NB_DEBS=$(eval "awk -F\- '{print NF-1}' /workspace/env-distrib.list | awk 'NR==1'")
 NB_RPMS=$(eval "awk -F\- '{print NF-1}' /workspace/env-distrib.list | awk 'NR==2'")
-NB_DISTROS=$(expr $(expr ${NB_DEBS} + ${NB_RPMS}) \* 2)
+NB_DISTROS=$(expr $(expr ${NB_DEBS} + ${NB_RPMS}) + 1) # dynamic packages (NB_DEBS + NB_RPMS) + static packages (alpine)
 
 # Get the number of the build and test logs
 NB_BUILD_LOGS=$(eval "find ${DIR_TEST}/build* | wc -l")
@@ -56,6 +56,7 @@ then
         # Push to COS bucket ERR
         echo "There are build or test log files missing. " 2>&1 | tee -a ${LOG}
         # Check which build or test log files are missing
+        # Check dynamic packages
         for DISTRO in ${DISTROS}
         do
             TEST_LOG="${DIR_TEST}/test_${DISTRO}.log"
@@ -69,6 +70,14 @@ then
                 echo "Missing" 2>&1 | tee -a ${PATH_TEST_ERRORS}
             fi
         done
+        # Check static packages
+        TEST_LOG="${DIR_TEST}/test_alpine.log"
+        if [[ $? -ne 0 ]]
+        then
+            # Print the DISTRO in the {PATH_TEST_ERRORS}
+            echo "DISTRO ${DISTRO}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
+            echo "Missing" 2>&1 | tee -a ${PATH_TEST_ERRORS}
+        fi
         TOTAL_MISSING=$(eval "grep -c "Missing" ${PATH_TEST_ERRORS}")
         TOTAL_ERRORS=$(eval "grep -c 1 ${PATH_TEST_ERRORS}")
         echo "There are ${TOTAL_MISSING} test log files missing and there are ${TOTAL_ERRORS} errors for the existing test log files." 2>&1 | tee -a ${LOG}
