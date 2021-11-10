@@ -23,9 +23,6 @@ then
     exit 1
 else
     echo "Found $DAEMON pid:$pid"  2>&1 | tee -a ${LOG}
-    ps -aef | grep docker | grep -v grep
-    sleep 10
-    ps -aef
     if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]] && [ ! -d /root/.docker ]
     then
         mkdir /root/.docker
