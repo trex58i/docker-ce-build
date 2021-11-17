@@ -7,17 +7,21 @@ set -o allexport
 source env.list
 source env-distrib.list
 
-DIR_TEST="/workspace/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}"
+DIR_TEST="/workspace/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}_${DATE}"
+export DIR_TEST
 
-DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}"
-DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}"
+DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}_${DATE}"
+DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}_${DATE}"
 
 PATH_DOCKERFILE="${PATH_SCRIPTS}/test"
-PATH_TEST_ERRORS="${DIR_TEST}/errors.txt"
 
-DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}"
+DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}_${DATE}"
 
 DIR_TEST_COS="${DIR_COS_BUCKET}/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}"
+
+FILE_ERRORS="errors.txt"
+PATH_ERRORS="${DIR_TEST}/${FILE_ERRORS}"
+PATH_ERRORS_COS="${DIR_TEST_COS}/${FILE_ERRORS}"
 
 # Create the test directory
 if ! test -d ${DIR_TEST}
@@ -55,8 +59,10 @@ do
     CONT_NAME="t_docker_run_${DISTRO_NAME}_${DISTRO_VERS}"
     BUILD_LOG="build_${DISTRO_NAME}_${DISTRO_VERS}.log"
     TEST_LOG="test_${DISTRO_NAME}_${DISTRO_VERS}.log"
+    TEST_JUNIT="unit-tests-${DISTRO_NAME}-${DISTRO_VERS}.xml"
 
     export DISTRO_NAME
+    export DISTRO_VERS
 
     # Get in the tmp directory and get the docker-ce and containerd packages and the Dockerfile in it
     if ! test -d tmp
@@ -107,13 +113,19 @@ do
         echo "Docker build for ${DISTRO} done" 2>&1 | tee -a ${LOG}
       fi
 
+      # Copying the build log to the COS bucket
+      if test -f ${DIR_TEST}/${BUILD_LOG}
+      then
+        cp ${DIR_TEST}/${BUILD_LOG} ${DIR_TEST_COS}
+      fi
+
       # Running the tests
       echo "### ### Running the tests from the container: ${CONT_NAME} ### ###" 2>&1 | tee -a ${LOG}
       if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
       then
-        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
       else
-        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DISTRO_NAME --env PATH_SCRIPTS --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
       fi
 
       status_code="$(docker container wait $CONT_NAME)"
@@ -125,7 +137,16 @@ do
         echo "Tests done" 2>&1 | tee -a ${LOG}
       fi
 
-      # Copy the logs to the COS bucket
+      # Copying the test logs to the COS bucket
+      if test -f ${DIR_TEST}/${TEST_LOG}
+      then
+        cp ${DIR_TEST}/${TEST_LOG} ${DIR_TEST_COS}
+      fi
+
+      if test -f ${DIR_TEST}/${TEST_JUNIT}
+      then
+        cp ${DIR_TEST}/${TEST_JUNIT} ${DIR_TEST_COS}
+      fi
 
       # Stop and remove the docker container
       echo "### ### # Cleanup: ${CONT_NAME} # ### ###"
@@ -142,8 +163,7 @@ do
 
     if test -f ${DIR_TEST}/${TEST_LOG} && [[ $(eval "cat ${DIR_TEST}/${TEST_LOG} | grep -c exitCode") == 4 ]]
     then
-      echo "DEB and RPM packages" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-
+      echo "Dynamic packages" 2>&1 | tee -a ${PATH_TEST_ERRORS}
       # We get 4 exitCodes in the log (3 tests + the output of the first containing exitCode)
       TEST_1=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==2' | rev | cut -d' ' -f 1")
       TEST_2=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==3' | rev | cut -d' ' -f 1")
@@ -160,6 +180,9 @@ do
 
     [[ "$TEST_1" -eq "0" ]] && [[ "$TEST_2" -eq "0" ]] && [[ "$TEST_3" -eq "0" ]]
     TEST=$?
+
+    # Copying the errors.txt to the COS bucket
+    cp ${PATH_ERRORS} ${PATH_ERRORS_COS}
   done
 done
 
@@ -171,6 +194,7 @@ IMAGE_NAME_STATIC="t-static_docker_${DISTRO_NAME}"
 CONT_NAME_STATIC="t-static_docker_run_${DISTRO_NAME}"
 BUILD_LOG_STATIC="build-static_${DISTRO_NAME}.log"
 TEST_LOG_STATIC="test-static_${DISTRO_NAME}.log"
+TEST_JUNIT_STATIC="unit-tests-${DISTRO_NAME}.xml"
 
 export DISTRO_NAME
 
@@ -210,13 +234,19 @@ else
     echo "Docker build done" 2>&1 | tee -a ${LOG}
   fi
 
+  # Copying the build log to the COS bucket
+  if test -f ${DIR_TEST}/${BUILD_LOG_STATIC}
+  then
+    cp ${DIR_TEST}/${BUILD_LOG_STATIC} ${DIR_TEST_COS}
+  fi
+
   # Running the tests
   echo "### ## Running the tests from the container: ${CONT_NAME_STATIC} ## ###" 2>&1 | tee -a ${LOG}
   if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
   then
-    docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
+    docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
   else
-    docker run --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
+    docker run --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
   fi
 
   status_code="$(docker container wait ${CONT_NAME_STATIC})"
@@ -228,7 +258,16 @@ else
     echo "Tests done" 2>&1 | tee -a ${LOG}
   fi
 
-  # Copy the logs to the COS bucket
+  # Copying the test logs to the COS bucket
+  if test -f ${DIR_TEST}/${TEST_LOG_STATIC}
+  then
+    cp ${DIR_TEST}/${TEST_LOG_STATIC} ${DIR_TEST_COS}
+  fi
+
+  if test -f ${DIR_TEST}/${TEST_JUNIT_STATIC}
+  then
+    cp ${DIR_TEST}/${TEST_JUNIT_STATIC} ${DIR_TEST_COS}
+  fi
 
   # Stop and remove the docker container
   echo "### ### # Cleanup: ${CONT_NAME_STATIC} # ### ###" 2>&1 | tee -a ${LOG}
@@ -262,3 +301,6 @@ TEST_STATIC=$?
 [[ "$TEST" -eq "0" ]] && [[ "$TEST_STATIC" -eq "0" ]]
 echo "All : $?" 2>&1 | tee -a ${PATH_TEST_ERRORS}
 tail -9 ${PATH_TEST_ERRORS} 2>&1 | tee -a ${LOG}
+
+# Copying the errors.txt to the COS bucket
+cp ${PATH_ERRORS} ${PATH_ERRORS_COS}

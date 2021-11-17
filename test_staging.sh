@@ -1,10 +1,4 @@
-#/bin/bash
-
-##
-# docker run -d -v /home/fpascual:/workspace -v /home/fpascual/.docker/config.json:/root/.docker/config.json --privileged --name docker-test-staging quay.io/powercloud/docker-ce-build
-# docker exec -it docker-test-staging /bin/bash
-##
-#set -eux
+#!/bin/bash
 
 set -ue
 
@@ -13,8 +7,9 @@ source env.list
 source env-distrib.list
 
 DIR_TEST="/workspace/test-staging_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}"
+export DIR_TEST
+
 PATH_DOCKERFILE="${PATH_SCRIPTS}/test-staging"
-PATH_TEST_ERRORS="${DIR_TEST}/errors.txt"
 
 # Create the test directory
 if ! test -d ${DIR_TEST}
@@ -22,18 +17,10 @@ then
     mkdir -p "${DIR_TEST}"
 fi
 
-# Create the errors.txt file where we will put a summary of the test logs
-if ! test -f ${PATH_TEST_ERRORS}
-then
-    touch ${PATH_TEST_ERRORS}
-else
-    rm ${PATH_TEST_ERRORS}
-    touch ${PATH_TEST_ERRORS}
-fi
-
+echo "# Tests of the dynamic packages #"
 for PACKTYPE in DEBS RPMS
 do
-    echo "# Looking for distro type: ${PACKTYPE} #" 2>&1 | tee -a ${LOG}
+    echo "## Looking for distro type: ${PACKTYPE} ##" 2>&1 | tee -a ${LOG}
 
     for DISTRO in ${!PACKTYPE}
     do
@@ -46,10 +33,11 @@ do
         CONT_NAME="t_docker_run_${DISTRO_NAME}_${DISTRO_VERS}"
         BUILD_LOG="build_${DISTRO_NAME}_${DISTRO_VERS}.log"
         TEST_LOG="test_${DISTRO_NAME}_${DISTRO_VERS}.log"
+        TEST_JUNIT="unit-tests-${DISTRO_NAME}-${DISTRO_VERS}.xml"
 
         export DISTRO_NAME
+        export DISTRO_VERS
 
-        echo "### Tests for docker-ce and containerd packages ###" 2>&1 | tee -a ${LOG}
         # Get in the tmp directory and get the Dockerfile
         if ! test -d tmp
         then
@@ -58,8 +46,8 @@ do
             rm -rf tmp
             mkdir tmp
         fi
-
         pushd tmp
+
         echo "### # Copying the packages and the dockerfile for ${DISTRO} # ###" 2>&1 | tee -a ${LOG}
         # Copy the Dockerfile
         cp ${PATH_DOCKERFILE}-${PACKTYPE}/Dockerfile .
@@ -86,7 +74,12 @@ do
             fi
 
             echo "### ### Running the tests from the container: ${CONT_NAME} ### ###" 2>&1 | tee -a ${LOG}
-            docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name $CONT_NAME ${IMAGE_NAME}
+            if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
+            then
+                docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+            else
+                docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+            fi
 
 	    status_code="$(docker container wait $CONT_NAME)"
             if [[ ${status_code} -ne 0 ]]; then
@@ -104,26 +97,5 @@ do
 	fi
 	popd
         rm -rf tmp
-
-	# Check the logs and get in the errors.txt a summary of the error logs
-        if test -f ${DIR_TEST}/${TEST_LOG}
-        then
-            echo "### # Checking the logs # ###"
-            echo "DISTRO ${DISTRO_NAME} ${DISTRO_VERS}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-            TEST_1=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==2' | rev | cut -d' ' -f 1")
-            echo "TestDistro : ${TEST_1}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-
-            TEST_2=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==3' | rev | cut -d' ' -f 1")
-            echo "TestDistroInstallPackage : ${TEST_2}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-
-            TEST_3=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==4' | rev | cut -d' ' -f 1")
-            echo "TestDistroPackageCheck : ${TEST_3}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-
-            [[ "$TEST_1" -eq "0" ]] && [[ "$TEST_2" -eq "0" ]] && [[ "$TEST_3" -eq "0" ]]
-            echo "All : $?" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-            tail -5 ${PATH_TEST_ERRORS}
-        else
-            echo "There is no ${TEST_LOG} file." 2>&1 | tee -a ${LOG}
-        fi
     done
 done
