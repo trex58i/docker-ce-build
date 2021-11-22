@@ -2,10 +2,20 @@
 
 set -ue
 
+
 # Paths to the scripts and to the log
 PATH_SCRIPTS="/home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build"
-LOG="/workspace/prowjob.log"
 
+if [[ ! -z ${ARTIFACTS} ]]
+then
+    LOG="${ARTIFACTS}/prowjob.log"
+else
+    LOG="/workspace/prowjob.log"
+fi
+
+DATE=`date +%d%m%y-%H%S`
+
+export DATE
 export PATH_SCRIPTS
 export LOG
 

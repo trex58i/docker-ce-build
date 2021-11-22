@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script to get the env.list file and the dockertest from the ppc64le-docker COS bucket and to generate the env-distrib.list
-# The env.list would contain the DOCKER_VERS, the CONTAINERD_VERS and the PACKAGING_REF which is the commit for the docker-ce-packaging repo
+# The env.list would contain the DOCKER_VERS, the CONTAINERD_VERS and the DOCKER_PACKAGING_REF which is the commit for the docker-ce-packaging repo
 # The env-distrib.list would get the distributions for which we want to build docker-ce
 
 set -ue
@@ -40,8 +40,8 @@ source /workspace/${FILE_ENV}
 mkdir docker-ce-packaging
 pushd docker-ce-packaging
 git init
-git remote add origin  https://github.com/docker/docker-ce-packaging.git
-git fetch --depth 1 origin ${PACKAGING_REF}
+git remote add origin https://github.com/docker/docker-ce-packaging.git
+git fetch --depth 1 origin ${DOCKER_PACKAGING_REF}
 git checkout FETCH_HEAD
 
 make REF=${DOCKER_VERS} checkout
@@ -56,7 +56,7 @@ source /workspace/${FILE_ENV_DISTRIB}
 # Get the containerd directory if we don't want to build containerd
 if [[ ${CONTAINERD_BUILD} = "0" ]]
 then
-    cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-${CONTAINERD_VERS} /workspace/
+    cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-${CONTAINERD_VERS} /workspace/containerd-${CONTAINERD_VERS}_${DATE}
 fi
 
 # Check if we have the env.list, the env-distrib.list and the dockertest
@@ -66,11 +66,11 @@ then
     exit 1
 else
 # check there are 3 env variables in env.list
-    if grep -Fq "DOCKER_VERS" ${FILE_ENV} && grep -Fq "CONTAINERD_BUILD" ${FILE_ENV} && grep -Fq "CONTAINERD_VERS" ${FILE_ENV} && grep -Fq "PACKAGING_REF" ${FILE_ENV}
+    if grep -Fq "DOCKER_VERS" ${FILE_ENV} && grep -Fq "CONTAINERD_BUILD" ${FILE_ENV} && grep -Fq "CONTAINERD_VERS" ${FILE_ENV} && grep -Fq "DOCKER_PACKAGING_REF" ${FILE_ENV}
     then
-        echo "DOCKER_VERS, CONTAINERD_BUILD, CONTAINERD_VERS, PACKAGING_REF are in env.list" 2>&1 | tee -a ${LOG}
+        echo "DOCKER_VERS, CONTAINERD_BUILD, CONTAINERD_VERS, DOCKER_PACKAGING_REF are in env.list" 2>&1 | tee -a ${LOG}
     else
-        echo "DOCKER_VERS, CONTAINERD_BUILC, CONTAINERD_VERS and/or PACKAGING_REF are not in env.list" 2>&1 | tee -a ${LOG}
+        echo "DOCKER_VERS, CONTAINERD_BUILC, CONTAINERD_VERS and/or DOCKER_PACKAGING_REF are not in env.list" 2>&1 | tee -a ${LOG}
         exit 1
     fi
 # check there are two env variables in env-distrib.list

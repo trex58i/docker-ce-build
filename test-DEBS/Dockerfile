@@ -1,6 +1,6 @@
 # Dockerfile to test DEBS packages
 
-ARG GOLANG_VERSION=1.15.2
+ARG GOLANG_VERSION=1.16
 ARG DISTRO_NAME
 ARG DISTRO_VERS
 
@@ -16,11 +16,14 @@ ENV WORKSPACE=/workspace \
     TERM=xterm
 ENV PATH /usr/local/go/bin:$PATH
 
-RUN echo deb;\
-    apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata
+
+RUN apt-get install -y --no-install-recommends \
     apt-transport-https \
     ca-certificates \
     curl \
+    dbus-user-session \
+    git \
     gnupg2 \
     wget \
     software-properties-common \
