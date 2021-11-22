@@ -35,12 +35,12 @@ then
 fi
 
 # Create the errors.txt file where we will put a summary of the test logs
-if ! test -f ${PATH_TEST_ERRORS}
+if ! test -f ${PATH_ERRORS}
 then
-  touch ${PATH_TEST_ERRORS}
+  touch ${PATH_ERRORS}
 else
-  rm ${PATH_TEST_ERRORS}
-  touch ${PATH_TEST_ERRORS}
+  rm ${PATH_ERRORS}
+  touch ${PATH_ERRORS}
 fi
 
 echo "# Tests of the dynamic packages #"
@@ -159,11 +159,11 @@ do
 
     # Check the logs and get in the errors.txt a summary of the error logs
     echo "### ### ## Checking the logs ## ### ###" 2>&1 | tee -a ${LOG}
-    echo "DISTRO ${DISTRO_NAME} ${DISTRO_VERS}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
+    echo "DISTRO ${DISTRO_NAME} ${DISTRO_VERS}" 2>&1 | tee -a ${PATH_ERRORS}
 
     if test -f ${DIR_TEST}/${TEST_LOG} && [[ $(eval "cat ${DIR_TEST}/${TEST_LOG} | grep -c exitCode") == 4 ]]
     then
-      echo "Dynamic packages" 2>&1 | tee -a ${PATH_TEST_ERRORS}
+      echo "Dynamic packages" 2>&1 | tee -a ${PATH_ERRORS}
       # We get 4 exitCodes in the log (3 tests + the output of the first containing exitCode)
       TEST_1=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==2' | rev | cut -d' ' -f 1")
       TEST_2=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==3' | rev | cut -d' ' -f 1")
@@ -174,9 +174,9 @@ do
       TEST_3=1
     fi
 
-    echo "TestDistro : ${TEST_1}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-    echo "TestDistroInstallPackage : ${TEST_2}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-    echo "TestDistroPackageCheck : ${TEST_3}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
+    echo "TestDistro : ${TEST_1}" 2>&1 | tee -a ${PATH_ERRORS}
+    echo "TestDistroInstallPackage : ${TEST_2}" 2>&1 | tee -a ${PATH_ERRORS}
+    echo "TestDistroPackageCheck : ${TEST_3}" 2>&1 | tee -a ${PATH_ERRORS}
 
     [[ "$TEST_1" -eq "0" ]] && [[ "$TEST_2" -eq "0" ]] && [[ "$TEST_3" -eq "0" ]]
     TEST=$?
@@ -251,7 +251,7 @@ else
 
   status_code="$(docker container wait ${CONT_NAME_STATIC})"
   if [[ ${status_code} -ne 0 ]]; then
-    echo "ERROR: The test suite failed for ${DISTRO}. See details from '${TEST_LOG_STATIC}'" 2>&1 | tee -a ${LOG}
+    echo "ERROR: The test suite failed for ${DISTRO_NAME}. See details from '${TEST_LOG_STATIC}'" 2>&1 | tee -a ${LOG}
     docker logs ${CONT_NAME_STATIC} 2>&1 | tee ${DIR_TEST}/${TEST_LOG_STATIC}
   else
     docker logs ${CONT_NAME_STATIC} 2>&1 | tee ${DIR_TEST}/${TEST_LOG_STATIC}
@@ -280,7 +280,7 @@ rm -rf tmp
 
 if test -f ${DIR_TEST}/${TEST_LOG_STATIC} && [[ $(eval "cat ${DIR_TEST}/${TEST_LOG_STATIC} | grep -c exitCode") == 4 ]]
 then
-  echo "Static binaries" 2>&1 | tee -a ${PATH_TEST_ERRORS}
+  echo "Static binaries" 2>&1 | tee -a ${PATH_ERRORS}
   # We get 4 exitCodes in the log (3 tests + the output of the first containing exitCode)
   TEST_1_STATIC=$(eval "cat ${DIR_TEST}/${TEST_LOG_STATIC} | grep exitCode | awk 'NR==2' | rev | cut -d' ' -f 1")
   TEST_2_STATIC=$(eval "cat ${DIR_TEST}/${TEST_LOG_STATIC} | grep exitCode | awk 'NR==3' | rev | cut -d' ' -f 1")
@@ -291,16 +291,16 @@ else
   TEST_3_STATIC=1
 fi
 
-echo "TestDistro : ${TEST_1_STATIC}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-echo "TestDistroInstallPackage : ${TEST_2_STATIC}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-echo "TestDistroPackageCheck : ${TEST_3_STATIC}" 2>&1 | tee -a ${PATH_TEST_ERRORS}
+echo "TestDistro : ${TEST_1_STATIC}" 2>&1 | tee -a ${PATH_ERRORS}
+echo "TestDistroInstallPackage : ${TEST_2_STATIC}" 2>&1 | tee -a ${PATH_ERRORS}
+echo "TestDistroPackageCheck : ${TEST_3_STATIC}" 2>&1 | tee -a ${PATH_ERRORS}
 
 [[ "$TEST_1_STATIC" -eq "0" ]] && [[ "$TEST_2_STATIC" -eq "0" ]] && [[ "$TEST_3_STATIC" -eq "0" ]]
 TEST_STATIC=$?
 
 [[ "$TEST" -eq "0" ]] && [[ "$TEST_STATIC" -eq "0" ]]
-echo "All : $?" 2>&1 | tee -a ${PATH_TEST_ERRORS}
-tail -9 ${PATH_TEST_ERRORS} 2>&1 | tee -a ${LOG}
+echo "All : $?" 2>&1 | tee -a ${PATH_ERRORS}
+tail -9 ${PATH_ERRORS} 2>&1 | tee -a ${LOG}
 
 # Copying the errors.txt to the COS bucket
 cp ${PATH_ERRORS} ${PATH_ERRORS_COS}

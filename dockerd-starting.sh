@@ -5,30 +5,29 @@
 bash /usr/local/bin/dockerd-entrypoint.sh &
 
 # Check if the dockerd has started
-TIMEOUT=10
 DAEMON="dockerd"
-i=0
-echo $DAEMON
-while [ $i -lt $TIMEOUT ] && ! /usr/bin/pgrep $DAEMON
+while ! /usr/bin/pgrep ${DAEMON}
 do
-    i=$((i+1))
-    sleep 2
+    echo "Waiting for the dockerd pid"
+    sleep 14
 done
 
 pid=`/usr/bin/pgrep $DAEMON`
+echo "$DAEMON pid:$pid"  2>&1 | tee -a ${LOG}
 
-if [ -z "$pid" ]
+if [ "$pid" ]
 then
-    echo "$DAEMON has not started after $(($TIMEOUT*2)) seconds" 2>&1 | tee -a ${LOG}
-    exit 1
-else
-    echo "Found $DAEMON pid:$pid"  2>&1 | tee -a ${LOG}
-    if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]] && [ ! -d /root/.docker ]
-    then
-        mkdir /root/.docker
-        echo "$DOCKER_SECRET_AUTH" > /root/.docker/config.json
-        echo "Docker login" 2>&1 | tee -a ${LOG}
-    fi
-    echo "Launching docker info" 2>&1 | tee -a ${LOG}
-    docker info 2>&1 | tee -a ${LOG}
+    while ! docker stats --no-stream
+    do
+        echo "Waiting for dockerd to start"
+        sleep 10
+        if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]] && [ ! -d /root/.docker ]
+        then
+            mkdir /root/.docker
+            echo "$DOCKER_SECRET_AUTH" > /root/.docker/config.json
+            echo "Docker login" 2>&1 | tee -a ${LOG}
+        fi
+        echo "Launching docker info" 2>&1 | tee -a ${LOG}
+        docker info 2>&1 | tee -a ${LOG}
+    done
 fi
