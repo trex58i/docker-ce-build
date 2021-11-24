@@ -241,7 +241,13 @@ else
       # Build the package
       if ! test -d containerd-packaging
       then
-        git clone https://github.com/docker/containerd-packaging.git
+          mkdir containerd-packaging
+          pushd containerd-packaging
+          git init
+          git remote add origin https://github.com/docker/containerd-packaging.git
+          git fetch --depth 1 origin ${CONTAINERD_PACKAGING_REF}
+          git checkout FETCH_HEAD
+          make REF=${CONTAINERD_VERS} checkout
       fi
       pushd containerd-packaging
 

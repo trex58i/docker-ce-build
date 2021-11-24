@@ -79,5 +79,5 @@ RUN mkdir /certs /certs/client && chmod 1777 /certs /certs/client
 VOLUME /var/lib/docker
 EXPOSE 2375 2376
 
-ENTRYPOINT ["test_launch.sh"]
+ENTRYPOINT ["/usr/local/bin/test_launch.sh"]
 CMD []

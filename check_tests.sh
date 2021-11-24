@@ -7,7 +7,7 @@ set -o allexport
 source env.list
 source env-distrib.list
 
-DIR_TEST="/workspace/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}"
+DIR_TEST="/workspace/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}_${DATE}"
 PATH_TEST_ERRORS="${DIR_TEST}/errors.txt"
 
 # Check if there is a errors.txt file

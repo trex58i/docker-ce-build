@@ -105,12 +105,24 @@ then
     then
         ls ${PATH_COS}/s3_${COS_BUCKET_SHARED}
         echo "No error in the tests and shared bucket mounted." 2>&1 | tee -a ${LOG}
+        if [[ -z ${ARTIFACTS} ]]
+        then
+            cp ${LOG} ${DIR_COS_BUCKET}
+        fi
         exit 0
     else
         echo "No error in the tests but shared bucket not mounted." 2>&1 | tee -a ${LOG}
+        if [[ -z ${ARTIFACTS} ]]
+        then
+            cp ${LOG} ${DIR_COS_BUCKET}
+        fi
         exit 1
     fi
 else
     echo "There were some errors in the test, the packages have been pushed only to the private COS Bucket." 2>&1 | tee -a ${LOG}
+    if [[ -z ${ARTIFACTS} ]]
+    then
+        cp ${LOG} ${DIR_COS_BUCKET}
+    fi
     exit 1
 fi
