@@ -123,9 +123,9 @@ do
       echo "### ### Running the tests from the container: ${CONT_NAME} ### ###" 2>&1 | tee -a ${LOG}
       if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
       then
-        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
       else
-        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
       fi
 
       status_code="$(docker container wait $CONT_NAME)"
@@ -244,9 +244,9 @@ else
   echo "### ## Running the tests from the container: ${CONT_NAME_STATIC} ## ###" 2>&1 | tee -a ${LOG}
   if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
   then
-    docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
+    docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
   else
-    docker run --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
+    docker run --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
   fi
 
   status_code="$(docker container wait ${CONT_NAME_STATIC})"
