@@ -6,13 +6,15 @@ set -ue
 PATH_SCRIPTS="/home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build"
 DATE=`date +%d%m%y-%H%S`
 
-if [[ ! -z ${ARTIFACTS} ]]
+if [[ -z ${ARTIFACTS} ]]
 then
-    LOG="${ARTIFACTS}/prowjob_${DATE}.log"
-else
-    LOG="/workspace/prowjob_${DATE}.log"
+    ARTIFACTS=/logs/artifacts
+    echo "Setting ARTIFACTS to ${ARTIFACTS}"
+    mkdir -p ${ARTIFACTS}
 fi
+LOG="${ARTIFACTS}/prowjob_${DATE}.log"
 
+export ARTIFACTS
 export DATE
 export PATH_SCRIPTS
 export LOG
