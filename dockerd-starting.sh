@@ -2,7 +2,7 @@
 # Script calling dockerd-entrypoint that will start the dockerd and then checking that the docker daemon has started
 
 # Start the docker daemon in the background
-bash /usr/local/bin/dockerd-entrypoint.sh &
+bash /usr/local/bin/dockerd-entrypoint.sh --mtu=1440 &
 
 # Check if the dockerd has started
 DAEMON="dockerd"

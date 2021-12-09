@@ -207,23 +207,8 @@ source ${PATH_SCRIPTS}/push_COS.sh
 ## How to test a prow job
 ### Set up a ppc64le cluster
 On a ppc64le machine : 
-```bash
-# Stop the cluster
-sudo kubeadm reset
-rm $HOME/.kube/config/admin.conf
-# Start the cluster
-sudo kubeadm init 
-# Set kubeconfig
-mkdir -p $HOME/.kube/config
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config/admin.conf
-export KUBECONFIG=$HOME/.kube/config/admin.conf
-# Check if the cluster is running
-kubectl cluster-info
-# Enable scheduling (https://github.com/calebhailey/homelab/issues/3)
-kubectl taint nodes --all node-role.kubernetes.io/master-
-```
+See https://github.com/ppc64le-cloud/test-infra/wiki/Creating-Kubernetes-cluster-with-kubeadm-on-Power
+
 On an x86 machine:
 ```bash
 rm -rf $HOME/.kube/config/admin.conf

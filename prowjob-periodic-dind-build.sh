@@ -3,8 +3,9 @@
 set -ue
 
 # Paths to the scripts and to the log
+SECONDS=0
 PATH_SCRIPTS="/home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build"
-DATE=`date +%d%m%y-%H%S`
+DATE=`date +%d%m%y-%H%M`
 
 if [[ -z ${ARTIFACTS} ]]
 then
@@ -53,6 +54,9 @@ else
     echo "*** ** Tests check ** ***" 2>&1 | tee -a ${LOG}
     source ${PATH_SCRIPTS}/check_tests.sh
     echo "The tests results : ${CHECK_TESTS_BOOL}" 2>&1 | tee -a ${LOG}
+
+    duration=$SECONDS
+    echo "ALL : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed." 2>&1 | tee -a ${LOG}
 
     # Push to the COS Bucket according to CHECK_TESTS_BOOL
     echo "*** *** Push to the COS Buckets *** ***" 2>&1 | tee -a ${LOG}

@@ -19,6 +19,12 @@ then
   mkdir ${DIR_CONTAINERD}
 fi
 
+DIR_LOGS="/workspace/logs"
+if ! test -d ${DIR_LOGS}
+then
+  mkdir ${DIR_LOGS}
+fi
+
 DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}_${DATE}"
 if ! test -d ${DIR_COS_BUCKET}
 then
@@ -26,22 +32,26 @@ then
 fi
 
 DIR_DOCKER_COS="${DIR_COS_BUCKET}/docker-ce-${DOCKER_VERS}"
-
 if ! test -d ${DIR_DOCKER_COS}
 then
   mkdir ${DIR_DOCKER_COS}
 fi
 
 DIR_CONTAINERD_COS="${DIR_COS_BUCKET}/containerd-${CONTAINERD_VERS}"
-
 if ! test -d ${DIR_CONTAINERD_COS}
 then
   mkdir ${DIR_CONTAINERD_COS}
 fi
 
+DIR_LOGS_COS="${DIR_COS_BUCKET}/logs"
+if ! test -d ${DIR_LOGS_COS}
+then
+  mkdir ${DIR_LOGS_COS}
+fi
+
 PATH_DISTROS_MISSING="/workspace/distros-missing.txt"
 
-STATIC_LOG=/workspace/static.log
+STATIC_LOG="static.log"
 
 echo "# Building docker-ce #" 2>&1 | tee -a ${LOG}
 
@@ -59,13 +69,15 @@ patchDockerFiles() {
   done
 }
 
-pushd docker-ce-packaging/deb
+before_build_DEBS=$SECONDS
+
+pushd /workspace/docker-ce-packaging/deb
 patchDockerFiles .
 for DEB in ${DEBS}
 do
   echo "= Building for ${DEB} =" 2>&1 | tee -a ${LOG}
 
-  VERSION=${DOCKER_VERS} make debbuild/bundles-ce-${DEB}-ppc64le.tar.gz
+  VERSION=${DOCKER_VERS} make debbuild/bundles-ce-${DEB}-ppc64le.tar.gz &> ${DIR_LOGS}/build_docker_${DEB}.log
 
   if test -f debbuild/bundles-ce-${DEB}-ppc64le.tar.gz
   then
@@ -75,8 +87,11 @@ do
     cp -r debbuild/bundles-ce-${DEB}-ppc64le.tar.gz ${DIR_DOCKER}
     cp -r debbuild/bundles-ce-${DEB}-ppc64le.tar.gz ${DIR_DOCKER_COS}
 
+    echo "== Copying log to ${DIR_LOGS_COS} ==" 2>&1 | tee -a ${LOG}
+    cp ${DIR_LOGS}/build_docker_${DEB}.log ${DIR_LOGS_COS}/build_docker_${DEB}.log
+
     # Checking everything has been copied
-    ls -f ${DIR_DOCKER}/bundles-ce-${DEB}-ppc64le.tar.gz && ls -f ${DIR_DOCKER_COS}/bundles-ce-${DEB}-ppc64le.tar.gz
+    ls -f ${DIR_DOCKER}/bundles-ce-${DEB}-ppc64le.tar.gz && ls -f ${DIR_DOCKER_COS}/bundles-ce-${DEB}-ppc64le.tar.gz && ls -f ${DIR_LOGS_COS}/build_docker_${DEB}.log
     if [[ $? -eq 0 ]]
     then
       echo "${DEB} was copied." 2>&1 | tee -a ${LOG}
@@ -88,14 +103,18 @@ do
   fi
 done
 popd
+after_build_DEBS=$SECONDS
+duration_build_DEBS=$(expr $after_build_DEBS - $before_build_DEBS)
+echo "DURATION BUILD DEBS : $(($duration_build_DEBS / 60)) minutes and $(($duration_build_DEBS % 60)) seconds elapsed." 2>&1 | tee -a ${LOG}
 
+before_build_RPMS=$SECONDS
 pushd docker-ce-packaging/rpm
 patchDockerFiles .
 for RPM in ${RPMS}
 do
   echo "= Building for ${RPM} =" 2>&1 | tee -a ${LOG}
 
-  VERSION=${DOCKER_VERS} make rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz
+  VERSION=${DOCKER_VERS} make rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz &> ${DIR_LOGS}/build_docker_${RPM}.log
 
   if test -f rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz
   then
@@ -105,8 +124,11 @@ do
     cp -r rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz ${DIR_DOCKER}
     cp -r rpmbuild/bundles-ce-${RPM}-ppc64le.tar.gz ${DIR_DOCKER_COS}
 
+    echo "== Copying log to ${DIR_LOGS_COS} ==" 2>&1 | tee -a ${LOG}
+    cp ${DIR_LOGS}/build_docker_${RPM}.log ${DIR_LOGS_COS}/build_docker_${RPM}.log
+
     # Checking everything has been copied
-    ls -f ${DIR_DOCKER}/bundles-ce-${RPM}-ppc64le.tar.gz && ls -f ${DIR_DOCKER_COS}/bundles-ce-${RPM}-ppc64le.tar.gz
+    ls -f ${DIR_DOCKER}/bundles-ce-${RPM}-ppc64le.tar.gz && ls -f ${DIR_DOCKER_COS}/bundles-ce-${RPM}-ppc64le.tar.gz && ls -f ${DIR_LOGS_COS}/build_docker_${RPM}.log
     if [[ $? -eq 0 ]]
     then
       echo "${RPM} was copied." 2>&1 | tee -a ${LOG}
@@ -118,7 +140,11 @@ do
   fi
 done
 popd
+after_build_RPMS=$SECONDS
+duration_build_RPMS=$(expr $after_build_RPMS - $before_build_RPMS)
+echo "DURATION BUILD RPMS : $(($duration_build_RPMS / 60)) minutes and $(($duration_build_RPMS % 60)) seconds elapsed." 2>&1 | tee -a ${LOG}
 
+before_build_static=$SECONDS
 echo "= Building static binaries =" 2>&1 | tee -a ${LOG}
 pushd docker-ce-packaging/static
 
@@ -133,35 +159,37 @@ fi
 status_code="$(docker container wait ${CONT_NAME})"
 if [[ ${status_code} -ne 0 ]]; then
   echo "The static binaries build failed. See details from '${STATIC_LOG}'" 2>&1 | tee -a ${LOG}
-  docker logs ${CONT_NAME} 2>&1 | tee ${STATIC_LOG}
+  docker logs ${CONT_NAME} 2>&1 | tee ${DIR_LOGS}/${STATIC_LOG}
+  docker rm ${CONT_NAME}
 else
-  docker logs ${CONT_NAME} 2>&1 | tee ${STATIC_LOG}
+  docker logs ${CONT_NAME} 2>&1 | tee ${DIR_LOGS}/${STATIC_LOG}
+  docker rm ${CONT_NAME}
+
   echo "Static binaries built" 2>&1 | tee -a ${LOG}
 
   echo "== Copying packages to ${DIR_DOCKER} and to the internal COS Bucket ==" 2>&1 | tee -a ${LOG}
   cp build/linux/tmp/*.tgz ${DIR_DOCKER}
   cp build/linux/tmp/*.tgz ${DIR_DOCKER_COS}
 
+  echo "== Copying log to ${DIR_LOGS_COS} ==" 2>&1 | tee -a ${LOG}
+  cp ${DIR_LOGS}/${STATIC_LOG} ${DIR_LOGS_COS}/${STATIC_LOG}
+
   # Checking everything has been copied
-  ls -f ${DIR_DOCKER}/*.tgz && ls -f ${DIR_DOCKER_COS}/*.tgz
+  ls -f ${DIR_DOCKER}/*.tgz && ls -f ${DIR_DOCKER_COS}/*.tgz && ls -f ${DIR_LOGS_COS}/${STATIC_LOG}
   if [[ $? -eq 0 ]]
   then
     echo "The static binaries were copied." 2>&1 | tee -a ${LOG}
-    docker stop ${CONT_NAME}
-    docker rm ${CONT_NAME}
   else
     echo "The static binaries were not copied." 2>&1 | tee -a ${LOG}
   fi
 fi
 
-# Copying the static.log to the COS bucket
-if test -f ${STATIC_LOG}
-then
-  cp ${STATIC_LOG} ${DIR_COS_BUCKET}
-fi
-
 popd
+after_build_static=$SECONDS
+duration_build_static=$(expr $after_build_static - $before_build_static)
+echo "DURATION BUILD STATIC : $(($duration_build_static / 60)) minutes and $(($duration_build_static % 60)) seconds elapsed." 2>&1 | tee -a ${LOG}
 
+before_build_containerd=$SECONDS
 if [[ ${CONTAINERD_BUILD} != "0" ]]
 then
   echo "## Building containerd ##" 2>&1 | tee -a ${LOG}
@@ -180,7 +208,7 @@ then
   for DISTRO in $DISTROS
   do
     echo "= Building for ${DISTRO} =" 2>&1 | tee -a ${LOG}
-    make REF=${CONTAINERD_VERS} docker.io/library/${DISTRO}
+    make REF=${CONTAINERD_VERS} docker.io/library/${DISTRO} &> ${DIR_LOGS}/build_containerd_${DISTRO}.log
     DISTRO_NAME="$(cut -d':' -f1 <<<"${DISTRO}")"
     DISTRO_VERS="$(cut -d':' -f2 <<<"${DISTRO}")"
 
@@ -194,14 +222,19 @@ then
         mkdir ${DIR_CONTAINERD}/${DISTRO_NAME}
       fi
       cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+
+      echo "== Copying packages to ${DIR_CONTAINERD_COS} ==" 2>&1 | tee -a ${LOG}
       if ! test -d ${DIR_CONTAINERD_COS}/${DISTRO_NAME}
       then
         mkdir ${DIR_CONTAINERD_COS}/${DISTRO_NAME}
       fi
       cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
 
+      echo "== Copying log to ${DIR_LOGS_COS} ==" 2>&1 | tee -a ${LOG}
+      cp ${DIR_LOGS}/build_containerd_${DISTRO}.log ${DIR_LOGS_COS}/build_containerd_${DISTRO}.log
+
       # Checking everything has been copied
-      ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
+      ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS} && ls -f ${DIR_LOGS_COS}/build_containerd_${DISTRO}.log
       if [[ $? -eq 0 ]]
       then
         echo "${DISTRO} was copied." 2>&1 | tee -a ${LOG}
@@ -251,7 +284,7 @@ else
       fi
       pushd containerd-packaging
 
-      make REF=${CONTAINERD_VERS} docker.io/library/${DISTRO}
+      make REF=${CONTAINERD_VERS} docker.io/library/${DISTRO} &> ${DIR_LOGS}/build_containerd_${DISTRO}.log
       if test -d build/${DISTRO_NAME}/${DISTRO_VERS}
       then
         echo "${DISTRO} built" 2>&1 | tee -a ${LOG}
@@ -261,11 +294,16 @@ else
           mkdir ${DIR_CONTAINERD}/${DISTRO_NAME}
         fi
         cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+
+        echo "=== Copying packages to ${DIR_CONTAINERD_COS} ===" 2>&1 | tee -a ${LOG}
         if ! test -d ${DIR_CONTAINERD_COS}/${DISTRO_NAME}
         then
           mkdir ${DIR_CONTAINERD_COS}/${DISTRO_NAME}
         fi
         cp -r build/${DISTRO_NAME}/${DISTRO_VERS} ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
+
+        echo "== Copying log to ${DIR_LOGS_COS} ==" 2>&1 | tee -a ${LOG}
+        cp ${DIR_LOGS}/build_containerd_${DISTRO}.log ${DIR_LOGS_COS}/build_containerd_${DISTRO}.log
 
         # Checking everything has been copied
         ls -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS} && ls -d ${DIR_CONTAINERD_COS}/${DISTRO_NAME}/${DISTRO_VERS}
@@ -282,6 +320,9 @@ else
     fi
   done
 fi
+after_build_containerd=$SECONDS
+duration_build_containerd=$(expr $after_build_containerd - $before_build_containerd)
+echo "DURATION BUILD CONTAINERD : $(($duration_build_containerd / 60)) minutes and $(($duration_build_containerd % 60)) seconds elapsed." 2>&1 | tee -a ${LOG}
 
 # Check if the docker-ce packages have been built
 ls ${DIR_DOCKER}/*

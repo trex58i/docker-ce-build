@@ -7,7 +7,7 @@ set -o allexport
 source env.list
 source env-distrib.list
 
-DIR_TEST="/workspace/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}_${DATE}"
+DIR_TEST="/workspace/tests"
 export DIR_TEST
 
 DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}_${DATE}"
@@ -17,7 +17,7 @@ PATH_DOCKERFILE="${PATH_SCRIPTS}/test"
 
 DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}_${DATE}"
 
-DIR_TEST_COS="${DIR_COS_BUCKET}/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}"
+DIR_TEST_COS="${DIR_COS_BUCKET}/tests"
 
 FILE_ERRORS="errors.txt"
 PATH_ERRORS="${DIR_TEST}/${FILE_ERRORS}"
@@ -50,6 +50,7 @@ do
 
   for DISTRO in ${!PACKTYPE}
   do
+    begin=$SECONDS
     echo "### Looking for ${DISTRO} ###" 2>&1 | tee -a ${LOG}
     DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
     DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
@@ -132,8 +133,11 @@ do
       if [[ ${status_code} -ne 0 ]]; then
         echo "ERROR: The test suite failed for ${DISTRO}. See details from '${TEST_LOG}'" 2>&1 | tee -a ${LOG}
         docker logs $CONT_NAME 2>&1 | tee ${DIR_TEST}/${TEST_LOG}
+        docker rm $CONT_NAME
       else
         docker logs $CONT_NAME 2>&1 | tee ${DIR_TEST}/${TEST_LOG}
+        docker rm $CONT_NAME
+
         echo "Tests done" 2>&1 | tee -a ${LOG}
       fi
 
@@ -147,15 +151,13 @@ do
       then
         cp ${DIR_TEST}/${TEST_JUNIT} ${DIR_TEST_COS}
       fi
-
-      # Stop and remove the docker container
-      echo "### ### # Cleanup: ${CONT_NAME} # ### ###"
-      docker stop ${CONT_NAME}
-      docker rm ${CONT_NAME}
-      docker image rm ${IMAGE_NAME}
     fi
     popd
     rm -rf tmp
+
+    end=$SECONDS
+    duration=$(expr $end - $begin)
+    echo "DURATION ${DISTRO}: $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed." 2>&1 | tee -a ${LOG}
 
     # Check the logs and get in the errors.txt a summary of the error logs
     echo "### ### ## Checking the logs ## ### ###" 2>&1 | tee -a ${LOG}
@@ -186,6 +188,8 @@ do
   done
 done
 
+
+begin=$SECONDS
 echo "# Tests for the static packages #" 2>&1 | tee -a ${LOG}
 
 DISTRO_NAME="alpine"
@@ -208,7 +212,7 @@ else
 fi
 pushd tmp
 
-echo "## Copying the static packages and the dockerfile for ${DISTRO} ##" 2>&1 | tee -a ${LOG}
+echo "## Copying the static packages and the dockerfile for ${DISTRO_NAME} ##" 2>&1 | tee -a ${LOG}
 # Copy the static binaries
 cp ${DIR_DOCKER}/docker-ppc64le.tgz .
 # Copy the Dockerfile
@@ -244,17 +248,20 @@ else
   echo "### ## Running the tests from the container: ${CONT_NAME_STATIC} ## ###" 2>&1 | tee -a ${LOG}
   if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
   then
-    docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
+    docker run -d --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
   else
-    docker run --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
+    docker run -d --env DISTRO_NAME --env PATH_SCRIPTS --env DIR_TEST --env LOG -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --privileged --name ${CONT_NAME_STATIC} ${IMAGE_NAME_STATIC}
   fi
 
   status_code="$(docker container wait ${CONT_NAME_STATIC})"
   if [[ ${status_code} -ne 0 ]]; then
     echo "ERROR: The test suite failed for ${DISTRO_NAME}. See details from '${TEST_LOG_STATIC}'" 2>&1 | tee -a ${LOG}
     docker logs ${CONT_NAME_STATIC} 2>&1 | tee ${DIR_TEST}/${TEST_LOG_STATIC}
+    docker rm ${CONT_NAME_STATIC}
   else
     docker logs ${CONT_NAME_STATIC} 2>&1 | tee ${DIR_TEST}/${TEST_LOG_STATIC}
+    docker rm ${CONT_NAME_STATIC}
+
     echo "Tests done" 2>&1 | tee -a ${LOG}
   fi
 
@@ -268,15 +275,13 @@ else
   then
     cp ${DIR_TEST}/${TEST_JUNIT_STATIC} ${DIR_TEST_COS}
   fi
-
-  # Stop and remove the docker container
-  echo "### ### # Cleanup: ${CONT_NAME_STATIC} # ### ###" 2>&1 | tee -a ${LOG}
-  docker stop ${CONT_NAME_STATIC}
-  docker rm ${CONT_NAME_STATIC}
-  docker image rm ${IMAGE_NAME_STATIC}
 fi
 popd
 rm -rf tmp
+
+end=$SECONDS
+duration=$(expr $end - $begin)
+echo "DURATION ${DISTRO_NAME}: $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed." 2>&1 | tee -a ${LOG}
 
 if test -f ${DIR_TEST}/${TEST_LOG_STATIC} && [[ $(eval "cat ${DIR_TEST}/${TEST_LOG_STATIC} | grep -c exitCode") == 4 ]]
 then
