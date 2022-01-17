@@ -1,4 +1,4 @@
-# Scripts for the prow job periodic-dind-build
+# Scripts for the prow job periodic-dind-build.............
 
 The goal of these scripts and the associated prow job is to automate the process of building the docker-ce and containerd packages (as well as the static binaries) for ppc64le and of testing them. The packages would then be shared with the Docker team and be available on the https://download.docker.com package repositories.
 
