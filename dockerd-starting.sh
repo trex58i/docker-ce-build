@@ -2,7 +2,7 @@
 # Script calling dockerd-entrypoint that will start the dockerd and then checking that the docker daemon has started
 
 # Start the docker daemon in the background
-bash /usr/local/bin/dockerd-entrypoint.sh &
+bash /usr/local/bin/dockerd-entrypoint.sh --mtu=1440 &
 
 # Check if the dockerd has started
 DAEMON="dockerd"
@@ -13,7 +13,7 @@ do
 done
 
 pid=`/usr/bin/pgrep $DAEMON`
-echo "$DAEMON pid:$pid"  2>&1 | tee -a ${LOG}
+echo "$DAEMON pid:$pid"
 
 if [ "$pid" ]
 then
@@ -25,9 +25,9 @@ then
         then
             mkdir /root/.docker
             echo "$DOCKER_SECRET_AUTH" > /root/.docker/config.json
-            echo "Docker login" 2>&1 | tee -a ${LOG}
+            echo "Docker login"
         fi
-        echo "Launching docker info" 2>&1 | tee -a ${LOG}
-        docker info 2>&1 | tee -a ${LOG}
+        echo "Launching docker info"
+        docker info
     done
 fi
