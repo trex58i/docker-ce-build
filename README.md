@@ -43,8 +43,10 @@ This prow job builds the dynamic containerd packages (if CONTAINERD_BUILD is set
 
 ### The 8 scripts in detail
 
-- [dockerd-starting.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/dockerd-starting.sh)
+- [dockerctl.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/dockerctl.sh)
+**Usage**: dockerctl [start] | [stop]
 
+Start or Stop the dockerd daemon.
 This script runs the **dockerd-entrypoint.sh** in the background and then checks if the docker daemon has started and is running. We specify the MTU. See the reason [here](https://sylwit.medium.com/how-we-spent-a-full-day-figuring-out-a-mtu-issue-with-docker-4d81fdfe2caf).
 
 - [get-env.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/get-env.sh)
@@ -205,7 +207,7 @@ Explanations :
 
 ### Run the scripts
 
-Run **prow-build-docker.sh** or **prow-build-container.sh** except for the line calling **dockerd-starting.sh**. The **dockerd-entrypoint.sh** script has already been called as entrypoint of the pod, so it should not be called a second time.
+Run **prow-build-docker.sh** or **prow-build-container.sh** except for the line calling **dockerctl.sh**. The **dockerd-entrypoint.sh** script has already been called as entrypoint of the pod, so it should not be called a second time.
 
 ## How to test the whole prow job on a cluster
 
