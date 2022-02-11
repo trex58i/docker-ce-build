@@ -41,7 +41,12 @@ This prow job builds the dynamic containerd packages (if CONTAINERD_BUILD is set
 5. [Test the dynamic and static packages and check if there are any errors](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prow-build-docker.sh#L48:L58)
 6. [Push to the COS bucket shared with the Docker team the docker and containerd packages](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prow-build-docker.sh#L63:L65)
 
-### The 8 scripts in detail
+### The 9 scripts in detail
+- [trigger-prow-job-from-git.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/trigger-prow-job-from-git.sh)
+
+Trigger the execution of the next prow job by pushing a file change on a tracking branch of a github
+repository. 
+The tracking branch is [prow-job-tracking] https://github.com/ppc64le-cloud/docker-ce-build/tree/prow-job-tracking.
 
 - [dockerctl.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/dockerctl.sh)
 **Usage**: dockerctl [start] | [stop]
