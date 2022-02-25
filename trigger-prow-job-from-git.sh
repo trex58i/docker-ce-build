@@ -1,6 +1,6 @@
 #!/bin/bash
 ##
-# Usage: trigger-prow-job-from-git.sh -r ${TRACKING_REPO} -b ${TRACKING_BRANCH} -s ${SRC_FILE DEST_FILE} -d ${DEST_FILE DEST_FILE}
+# Usage: trigger-prow-job-from-git.sh -r <TRACKING_REPO> -b <TRACKING_BRANCH> -s <SRC_FILE> -d <DEST_FILE>
 #
 # *** Important ***
 #  Please make sure that the ssh key for the git push is configured
@@ -10,11 +10,11 @@
 set -eu
 
 display_usage() {
- echo "usage: -r <TRACKING_REPO> -b <TRACKING_BRANCH> -s <SRC_FILE> DEST_FILE} -d <DEST_FILE>}"
+ echo "Usage: -r <TRACKING_REPO> -b <TRACKING_BRANCH> -s <SRC_FILE> -d <DEST_FILE>"
  echo "Example:"
- echo "  ./trigger-prow-job-from-git.sh -r alunsin/docker-ce-build -b prow-job-tracking -s $PWD/env/date.list -d 
-job/postsubmit-build-docker-al"
- exit 1
+ echo " trigger-prow-job-from-git.sh -r alunsin/docker-ce-build" \
+     "-b prow-job-tracking -s $PWD/env/date.list -d job/postsubmit-build-docker"
+ exit 2
 }
 
 
@@ -51,8 +51,8 @@ pushd ${JOB_TRACKING_DIR}
 
 git init > /dev/null 2>&1
 
-git config --global user.email "ppc64le@in.ibm.com"
-git config --global user.name "Runtime Team Jobs"
+git config --local user.email "ppc64le@in.ibm.com"
+git config --local user.name "Runtime Team Jobs"
 
 git fetch git@github.com:${TRACKING_REPO}.git ${TRACKING_BRANCH}
 git branch --force ${TRACKING_BRANCH} FETCH_HEAD

@@ -60,5 +60,5 @@ cd ${PATH_SCRIPTS}
 if [ $? -ne 0 ]
 then
     echo "Failed to add the git commit to trigger the next job"
-    exit 2
+    exit 3
 fi
