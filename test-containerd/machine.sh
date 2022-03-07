@@ -1,0 +1,88 @@
+#!/bin/bash
+
+SSH_KEY=""
+NAME=""
+OUTPUT="."
+RUNC_FLAVOR="runc"
+TEST_RUNTIME="io.containerd.runc.v2"
+
+set -euxo pipefail
+
+function usage() {
+	cat << EOF
+Script creating a server, and running test with the required option.
+Usage: containertest.sh --name <NAME> [OPTIONS]
+Options:
+        --key <SSH_KEY>: name of the ssh key used;
+	--name <NAME>: mandatory option, name without space;
+        --output <OUTPUT>: location to save results;
+	--runc <RUNC_FLAVOR>: runc or crun (runc by default);
+	--runtime <TEST_RUNTIME>: io.containerd.runtime.v1.linux,
+		io.containerd.runc.v1 or io.containerd.runc.v2
+		(io.containerd.runc.v2 by default);
+EOF
+}
+
+
+# Get options
+while [[ $# != 0 ]]; do
+	case "$1" in
+		--help | -h) usage; exit 0;;
+		--key) SSH_KEY=$2; shift; shift;;
+		--name) NAME=$2; shift; shift;;
+		--output) OUTPUT=$2; shift; shift;;
+		--runc) RUNC_FLAVOR=$2; shift; shift;;
+		--runtime) TEST_RUNTIME=$2; shift; shift;;
+		*) echo "Unknown argument $1"; usage; exit 1;;
+	esac
+done
+
+# Ensure key and name are fulfilled
+if [ -z $NAME ]; then echo "Name not fulfilled."; usage; exit 1; fi
+if [ -z $SSH_KEY ]; then echo "Key not fulfilled."; usage; exit 1; fi
+
+# Create a machine
+ibmcloud pi instance-create $NAME --image ubuntu_2004_containerd --key-name $SSH_KEY --memory 2 --processor-type shared --processors '0.25' --network 'public-192_168_141_8-29-VLAN_2093' --storage-type tier3
+
+# Wait it is registred
+sleep 60
+# Get PID
+ID=$(ibmcloud pi ins | grep "$NAME" | cut -d ' ' -f1)
+
+# Using ID, get IP
+# First, wait it starts
+# Typical time needed: 5 to 6 minutes
+TIMEOUT=10
+i=0
+while [ $i -lt $TIMEOUT ] && [ -z "$(ibmcloud pi in $ID | grep 'External Address:')" ]; do
+  i=$((i+1))
+  sleep 60
+done
+# Fail to connect
+if [ "$i" == "10" ]; then exit 1; fi
+
+IP=$(ibmcloud pi in $ID | grep -Eo "External Address:[[:space:]]*[0-9.]+" | cut -d ' ' -f3)
+
+# Check if the server is up
+# Typical time needed: 1 to 3 minutes
+TIMEOUT=10
+i=0
+mkdir -p ~/.ssh
+while [ $i -lt $TIMEOUT ] && ! ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey echo OK
+do
+  ssh-keyscan -t rsa $IP >> ~/.ssh/known_hosts
+  i=$((i+1))
+  sleep 60
+done
+# Fail to connect
+if [ "$i" == "10" ]; then exit 1; fi
+
+# Get test script and execute it
+ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey wget https://raw.githubusercontent.com/ppc64le-cloud/docker-ce-build/main/test-containerd/test.sh
+ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey sudo bash test.sh $RUNC_FLAVOR $TEST_RUNTIME
+scp -i /etc/ssh-volume/ssh-privatekey "ubuntu@$IP:/home/containerd_test/containerd/*.xml" ${OUTPUT}
+
+# Ensure we are yet connected
+echo "" | ibmcloud login
+# Remove machine after test
+ibmcloud pi instance-delete $ID
