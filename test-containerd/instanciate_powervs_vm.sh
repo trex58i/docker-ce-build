@@ -82,8 +82,8 @@ done
 if [ "$i" == "10" ]; then exit 1; fi
 
 # Get test script and execute it
-ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey wget https://raw.githubusercontent.com/ppc64le-cloud/docker-ce-build/main/test-containerd/test.sh
-ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey sudo bash test.sh $RUNC_FLAVOR $TEST_RUNTIME
+ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey wget https://raw.githubusercontent.com/ppc64le-cloud/docker-ce-build/main/test-containerd/test_on_powervs.sh
+ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey sudo bash test_on_powervs.sh $RUNC_FLAVOR $TEST_RUNTIME
 scp -i /etc/ssh-volume/ssh-privatekey "ubuntu@$IP:/home/containerd_test/containerd/*.xml" ${OUTPUT}
 
 # Ensure we are yet connected
