@@ -2,6 +2,7 @@
 
 SSH_KEY=""
 NAME=""
+NETWORK=""
 OUTPUT="."
 RUNC_FLAVOR="runc"
 TEST_RUNTIME="io.containerd.runc.v2"
@@ -10,12 +11,13 @@ set -euxo pipefail
 
 function usage() {
 	cat << EOF
-Script creating a server, and running test with the required option.
-Usage: containertest.sh --name <NAME> [OPTIONS]
+The script creates a server, and runs tests with required options.
+Usage: instanciate_powervs_vm.sh --key <SSH_KEY> --name <NAME> --network <NETWORK> [OPTIONS]
 Options:
-        --key <SSH_KEY>: name of the ssh key used;
+	--key <SSH_KEY>: name of the ssh key used;
 	--name <NAME>: mandatory option, name without space;
-        --output <OUTPUT>: location to save results;
+	--network <NETWORK>: network used by PowerVS;
+	--output <OUTPUT>: location to save results;
 	--runc <RUNC_FLAVOR>: runc or crun (runc by default);
 	--runtime <TEST_RUNTIME>: io.containerd.runtime.v1.linux,
 		io.containerd.runc.v1 or io.containerd.runc.v2
@@ -30,6 +32,7 @@ while [[ $# != 0 ]]; do
 		--help | -h) usage; exit 0;;
 		--key) SSH_KEY=$2; shift; shift;;
 		--name) NAME=$2; shift; shift;;
+		--network) NETWORK=$2; shift; shift;;
 		--output) OUTPUT=$2; shift; shift;;
 		--runc) RUNC_FLAVOR=$2; shift; shift;;
 		--runtime) TEST_RUNTIME=$2; shift; shift;;
@@ -37,12 +40,13 @@ while [[ $# != 0 ]]; do
 	esac
 done
 
-# Ensure key and name are fulfilled
-if [ -z $NAME ]; then echo "Name not fulfilled."; usage; exit 1; fi
+# Ensure key, name and network are fulfilled
 if [ -z $SSH_KEY ]; then echo "Key not fulfilled."; usage; exit 1; fi
+if [ -z $NAME ]; then echo "Name not fulfilled."; usage; exit 1; fi
+if [ -z $NETWORK ]; then echo "Network not fulfilled."; usage; exit 1; fi
 
 # Create a machine
-ibmcloud pi instance-create $NAME --image ubuntu_2004_containerd --key-name $SSH_KEY --memory 2 --processor-type shared --processors '0.25' --network 'public-192_168_141_8-29-VLAN_2093' --storage-type tier3
+ibmcloud pi instance-create $NAME --image ubuntu_2004_containerd --key-name $SSH_KEY --memory 2 --processor-type shared --processors '0.25' --network $NETWORK --storage-type tier3
 
 # Wait it is registred
 sleep 60
