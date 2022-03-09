@@ -57,9 +57,15 @@ buildContainerd() {
     TARGET="quay.io/centos/centos:stream8"
   fi
 
-  echo "Calling make REF=${CONTAINERD_VERS} ${TARGET}"
+  MAKE_OPTS="REF=${CONTAINERD_VERS}"
+  if [[ ! -z "${GOLANG_VERSION}" ]]
+  then
+    MAKE_OPTS+=" GOLANG_VERSION=${GOLANG_VERSION}"
+  fi
+
+  echo "Calling make ${MAKE_OPTS} ${TARGET}"
   cd /workspace/containerd-packaging &&\
-   make REF=${CONTAINERD_VERS} ${TARGET} > ${DIR_LOGS}/build_containerd_${DISTRO}.log 2>&1
+   make ${MAKE_OPTS} ${TARGET} > ${DIR_LOGS}/build_containerd_${DISTRO}.log 2>&1
 
   RET=$?
   if [[ $RET -ne 0 ]]
