@@ -36,7 +36,7 @@ export DATE
 
 # Test the packages
 echo "*** * Tests * ***"
-${PATH_SCRIPTS}/test.sh staging
+bash -x ${PATH_SCRIPTS}/test.sh staging
 
 # Check if there are errors in the tests : NOERR or ERR
 echo "*** ** Tests check ** ***"
