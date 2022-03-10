@@ -1,6 +1,9 @@
 #!/bin/bash
-# Script testing the docker-ce and containerd packages and the static binaries
 
+##
+# Script testing the docker-ce and containerd packages and the static binaries
+# Usage: test.sh [local | staging]
+##
 set -u
 
 set -o allexport
@@ -45,6 +48,21 @@ FILE_ERRORS="errors.txt"
 PATH_ERRORS="${DIR_TEST}/${FILE_ERRORS}"
 checkFile ${PATH_ERRORS}
 PATH_ERRORS_COS="${DIR_TEST_COS}/${FILE_ERRORS}"
+
+
+
+##
+# Set the test mode:
+# - local (default), test from locally built packages
+# - staging, test from the docker's download website
+##
+TEST_MODE="${1:-local}"
+if [[ "$TEST_MODE" = "staging" ]]; then
+echo "Setup test staging settings"
+  DIR_TEST_COS="${DIR_COS_BUCKET}/tests-staging"
+  PATH_DOCKERFILE="${PATH_SCRIPTS}/test-staging"
+fi
+
 
 echo "# Tests of the dynamic packages #"
 for PACKTYPE in DEBS RPMS
