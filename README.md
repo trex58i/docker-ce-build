@@ -90,7 +90,7 @@ It takes an optional 'test mode' argument:
 Note: static packages are only tested for the 'local' mode only at the moment at those packages are not published.
 
 Local mode:
-In this script, for each distribution, we build an image, where we install the newly built packages. We then run a docker based on this said image, in which we run **test_launch.sh**.
+In this script, for each distribution, we build an image, where we install the newly built packages. We then run a docker based on this said image, in which we run **test-launch.sh**.
 We do this for each distribution, for the docker-ce packages and the static binaries.
 It generates an **errors.txt** file with a summary of all tests, containing the exit codes of each test.
 
@@ -120,15 +120,15 @@ This Dockerfile is used for getting a docker-in-docker container. It is used for
 
 - [test-DEBS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-DEBS/Dockerfile) and [test-RPMS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-RPMS/Dockerfile)
 
-These two Dockerfiles are used for testing the docker-ce and containerd packages. Depending on the distro type (debs or rpms), we use them to build a container to test the packages and run **test_launch.sh**.
+These two Dockerfiles are used for testing the docker-ce and containerd packages. Depending on the distro type (debs or rpms), we use them to build a container to test the packages and run **test-launch.sh**.
 
 - [test-static-DEBS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-static-DEBS/Dockerfile) and [test-static-RPMS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-static-RPMS/Dockerfile)
 
-These two Dockerfiles are used for testing the static binaries. Like the two aforementioned Dockerfiles : depending on the distro type (debs or rpms), we use them to build a container to test the packages and run **test_launch.sh**.
+These two Dockerfiles are used for testing the static binaries. Like the two aforementioned Dockerfiles : depending on the distro type (debs or rpms), we use them to build a container to test the packages and run **test-launch.sh**.
 
 - [test-staging-DEBS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-staging-DEBS/Dockerfile) and [test-staging-RPMS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-staging-RPMS/Dockerfile)
 
-These two Dockerfiles are used for testing the packages after Docker has published them on https://download-stage.docker.com. As well as for the previous Dockerfiles, depending on the distro type, we use them to build a container and test the packages with the script **test_launch.sh**.
+These two Dockerfiles are used for testing the packages after Docker has published them on https://download-stage.docker.com. As well as for the previous Dockerfiles, depending on the distro type, we use them to build a container and test the packages with the script **test-launch.sh**.
 
 ## How to test the scripts manually in a pod
 ### Set up the secrets and the pod

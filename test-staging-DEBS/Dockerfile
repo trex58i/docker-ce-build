@@ -52,7 +52,7 @@ RUN set -eux; \
         echo 'dockremap:165536:65536' >> /etc/subuid; \
         echo 'dockremap:165536:65536' >> /etc/subgid
 
-COPY test_launch.sh /usr/local/bin/test_launch.sh
+COPY test-launch.sh /usr/local/bin/test-launch.sh
 
 # https://github.com/docker/docker/tree/master/hack/dind
 ENV DIND_COMMIT 42b1175eda071c0e9121e1d64345928384a93df1
@@ -65,7 +65,7 @@ RUN set -eux; \
         wget -O /usr/local/bin/dockerd-entrypoint.sh "https://raw.githubusercontent.com/docker-library/docker/${DOCKERD_COMMIT}/20.10/dind/dockerd-entrypoint.sh"; \
         chmod +x /usr/local/bin/dind; \
         chmod +x /usr/local/bin/dockerd-entrypoint.sh; \
-        chmod +x /usr/local/bin/test_launch.sh;
+        chmod +x /usr/local/bin/test-launch.sh;
 
 RUN set -eux; \
     url="https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-ppc64le.tar.gz";\
@@ -78,5 +78,5 @@ RUN set -eux; \
 VOLUME /var/lib/docker
 EXPOSE 2375 2376
 
-ENTRYPOINT ["/usr/local/bin/test_launch.sh"]
+ENTRYPOINT ["/usr/local/bin/test-launch.sh"]
 CMD []
