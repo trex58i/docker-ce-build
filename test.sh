@@ -60,6 +60,8 @@ TEST_MODE="${1:-local}"
 if [[ "$TEST_MODE" = "staging" ]]; then
   echo "Setup test staging settings"
   DIR_TEST_COS="${DIR_COS_BUCKET}/tests-staging"
+  checkDirectory ${DIR_TEST_COS}
+
   PATH_DOCKERFILE="${PATH_SCRIPTS}/test-staging"
 fi
 
