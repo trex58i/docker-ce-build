@@ -6,6 +6,13 @@ set -eu
 # Start the dockerd and wait for it to start
 ${PATH_SCRIPTS}/dockerctl.sh start
 
+#Calling dockerinfo to trace the versions info (docker and deps)
+#TODO addsome automated checks to make sure we are testing the proper package versions
+echo "= Docker info for ${DISTRO_NAME} start ="
+docker info
+echo "= Docker info for ${DISTRO_NAME} end ="
+echo ""
+
 # Run the docker test suite that consists of 3 tests
 echo "= Docker test suite for ${DISTRO_NAME} ="
 export GOPATH=${WORKSPACE}/test:/go
