@@ -2,7 +2,7 @@
 
 ##
 # Script testing the docker-ce and containerd packages and the static binaries
-# Usage: test.sh [local | staging]
+# Usage: test.sh [local | staging | release]
 ##
 set -u
 
@@ -49,12 +49,11 @@ PATH_ERRORS="${DIR_TEST}/${FILE_ERRORS}"
 checkFile ${PATH_ERRORS}
 PATH_ERRORS_COS="${DIR_TEST_COS}/${FILE_ERRORS}"
 
-
-
 ##
 # Set the test mode:
 # - local (default), test from locally built packages
-# - staging, test from the docker's download website
+# - staging, test from the docker's staging download website
+# - release, form docker's official public download website
 ##
 TEST_MODE="${1:-local}"
 if [[ "$TEST_MODE" = "staging" ]]; then
@@ -63,6 +62,20 @@ if [[ "$TEST_MODE" = "staging" ]]; then
   checkDirectory ${DIR_TEST_COS}
 
   PATH_DOCKERFILE="${PATH_SCRIPTS}/test-staging"
+
+  # see REPO_HOSTNAME ARG in Dockerfile
+  REPO_HOSTNAME="download-stage.docker.com"
+fi
+
+if [[ "$TEST_MODE" = "release" ]]; then
+  echo "Setup test release settings"
+  DIR_TEST_COS="${DIR_COS_BUCKET}/tests-release"
+  checkDirectory ${DIR_TEST_COS}
+
+  PATH_DOCKERFILE="${PATH_SCRIPTS}/test-staging"
+
+  #Use the same Dockerfile as staging, but modify download repo while calling 'docker build'
+  REPO_HOSTNAME="download.docker.com"
 fi
 
 
@@ -125,18 +138,25 @@ do
 
     echo "### # Building the test image: ${IMAGE_NAME} # ###"
     # Building the test image
-      if [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:8* ]]
-      then
-        ##
-        # Switch to quay.io for CentOS 8 stream
-        # See https://github.com/docker/containerd-packaging/pull/263
-        # See https://github.com/docker-library/official-images/pull/11831
-        ##
-        echo "Temporary fix: patching Dockerfile for using CentOS 8 stream and quay.io "
-        sed -i 's/FROM ppc64le.*/FROM quay.io\/centos\/centos\:stream8/g' Dockerfile
-      fi
+    if [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:8* ]]
+    then
+      ##
+      # Switch to quay.io for CentOS 8 stream
+      # See https://github.com/docker/containerd-packaging/pull/263
+      # See https://github.com/docker-library/official-images/pull/11831
+      ##
+      echo "Temporary fix: patching Dockerfile for using CentOS 8 stream and quay.io "
+      sed -i 's/FROM ppc64le.*/FROM quay.io\/centos\/centos\:stream8/g' Dockerfile
+    fi
 
-    docker build -t ${IMAGE_NAME} --build-arg DISTRO_NAME=${DISTRO_NAME} --build-arg DISTRO_VERS=${DISTRO_VERS} . > ${DIR_TEST}/${BUILD_LOG} 2>&1
+    BUILD_ARGS="--build-arg DISTRO_NAME=${DISTRO_NAME} --build-arg DISTRO_VERS=${DISTRO_VERS}"
+
+    if [[ "$TEST_MODE" = "staging" || "$TEST_MODE" = "release"  ]]; then
+      echo "Setup REPO_HOSTNAME=${REPO_HOSTNAME}"
+      BUILD_ARGS+= "--build-arg REPO_HOSTNAME=${REPO_HOSTNAME}"
+    fi
+
+    docker build -t ${IMAGE_NAME} ${BUILD_ARGS} . > ${DIR_TEST}/${BUILD_LOG} 2>&1
 
     if [[ $? -ne 0 ]]
     then

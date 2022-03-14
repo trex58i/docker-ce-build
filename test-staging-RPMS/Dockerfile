@@ -3,12 +3,14 @@
 ARG GOLANG_VERSION=1.16
 ARG DISTRO_NAME
 ARG DISTRO_VERS
+ARG REPO_HOSTNAME=download-stage.docker.com
 
 FROM ppc64le/$DISTRO_NAME:$DISTRO_VERS
 
 ARG GOLANG_VERSION
 ARG DISTRO_NAME
 ARG DISTRO_VERS
+ARG REPO_HOSTNAME
 
 WORKDIR /workspace
 RUN mkdir -p /workspace
@@ -19,7 +21,7 @@ ENV PATH /usr/local/go/bin:$PATH
 RUN set -eux; yum -y install wget make gcc findutils procps-ng
 
 RUN set -eux; yum install -y yum-utils &&\
-	yum-config-manager --add-repo https://download-stage.docker.com/linux/${DISTRO_NAME}/docker-ce-staging.repo &&\
+	yum-config-manager --add-repo https://${REPO_HOSTNAME}/linux/${DISTRO_NAME}/docker-ce-staging.repo &&\
 	yum -y install docker-ce docker-ce-cli containerd.io
 
 ##

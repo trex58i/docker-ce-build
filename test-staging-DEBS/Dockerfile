@@ -3,12 +3,14 @@
 ARG GOLANG_VERSION=1.16
 ARG DISTRO_NAME
 ARG DISTRO_VERS
+ARG REPO_HOSTNAME=download-stage.docker.com
 
 FROM ppc64le/$DISTRO_NAME:$DISTRO_VERS
 
 ARG GOLANG_VERSION
 ARG DISTRO_NAME
 ARG DISTRO_VERS
+ARG REPO_HOSTNAME
 
 WORKDIR /workspace
 RUN mkdir -p /workspace
@@ -36,8 +38,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 #Install from Docker-ce staging
-RUN set -eux; curl -fsSL https://download-stage.docker.com/linux/${DISTRO_NAME}/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg &&\
-    echo "deb [arch=ppc64el signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download-stage.docker.com/linux/${DISTRO_NAME} ${DISTRO_VERS} stable"\
+RUN set -eux; curl -fsSL https://${REPO_HOSTNAME}/linux/${DISTRO_NAME}/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg &&\
+    echo "deb [arch=ppc64el signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://${REPO_HOSTNAME}/linux/${DISTRO_NAME} ${DISTRO_VERS} stable"\
     | tee /etc/apt/sources.list.d/docker.list > /dev/null  &&\
     apt-get update && apt-get -y install docker-ce docker-ce-cli containerd.io
 
