@@ -153,7 +153,7 @@ do
 
     if [[ "$TEST_MODE" = "staging" || "$TEST_MODE" = "release"  ]]; then
       echo "Setup REPO_HOSTNAME=${REPO_HOSTNAME}"
-      BUILD_ARGS+= "--build-arg REPO_HOSTNAME=${REPO_HOSTNAME}"
+      BUILD_ARGS+="--build-arg REPO_HOSTNAME=${REPO_HOSTNAME}"
     fi
 
     docker build -t ${IMAGE_NAME} ${BUILD_ARGS} . > ${DIR_TEST}/${BUILD_LOG} 2>&1
