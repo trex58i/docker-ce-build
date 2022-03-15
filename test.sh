@@ -61,7 +61,7 @@ if [[ "$TEST_MODE" = "staging" ]]; then
   DIR_TEST_COS="${DIR_COS_BUCKET}/tests-staging"
   checkDirectory ${DIR_TEST_COS}
 
-  PATH_DOCKERFILE="${PATH_SCRIPTS}/test-staging"
+  PATH_DOCKERFILE="${PATH_SCRIPTS}/test-repo"
 
   # see REPO_HOSTNAME ARG in Dockerfile
   REPO_HOSTNAME="download-stage.docker.com"
@@ -72,7 +72,7 @@ if [[ "$TEST_MODE" = "release" ]]; then
   DIR_TEST_COS="${DIR_COS_BUCKET}/tests-release"
   checkDirectory ${DIR_TEST_COS}
 
-  PATH_DOCKERFILE="${PATH_SCRIPTS}/test-staging"
+  PATH_DOCKERFILE="${PATH_SCRIPTS}/test-repo"
 
   #Use the same Dockerfile as staging, but modify download repo while calling 'docker build'
   REPO_HOSTNAME="download.docker.com"

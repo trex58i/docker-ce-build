@@ -87,6 +87,7 @@ This script sets up the tests for both the docker-ce and containerd packages and
 It takes an optional 'test mode' argument:
     - local (default): the test is done on the packages that were just built.
     - staging: the test is done by installing the packages from the docker's staging repo (yum and apt).
+    - release: the test is done by installing the packages from the docker's official repo (yum and apt).
 Note: static packages are only tested for the 'local' mode only at the moment at those packages are not published.
 
 Local mode:
@@ -96,7 +97,10 @@ It generates an **errors.txt** file with a summary of all tests, containing the 
 
 Staging mode:
 This script is used to check the packages published by Docker on https://download-stage.docker.com are correct.
-It uses the same basis as **test.sh** but uses different images (test-staging-DEBS and test-staging-RPMS).
+It uses the same basis as **test.sh** but uses different images (test-repo-DEBS and test-repo-RPMS).
+
+Release mode:
+This script is used to check the packages published by Docker on https://download.docker.com are correct.
 
 - [test-launch.sh](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-launch.sh)
 
@@ -126,9 +130,9 @@ These two Dockerfiles are used for testing the docker-ce and containerd packages
 
 These two Dockerfiles are used for testing the static binaries. Like the two aforementioned Dockerfiles : depending on the distro type (debs or rpms), we use them to build a container to test the packages and run **test-launch.sh**.
 
-- [test-staging-DEBS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-staging-DEBS/Dockerfile) and [test-staging-RPMS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-staging-RPMS/Dockerfile)
+- [test-repo-DEBS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-repo-DEBS/Dockerfile) and [test-repo-RPMS](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/test-repo-RPMS/Dockerfile)
 
-These two Dockerfiles are used for testing the packages after Docker has published them on https://download-stage.docker.com. As well as for the previous Dockerfiles, depending on the distro type, we use them to build a container and test the packages with the script **test-launch.sh**.
+These two Dockerfiles are used for testing the packages after Docker has published them on https://download-stage.docker.com or https://download-stage.docker.com. As well as for the previous Dockerfiles, depending on the distro type, we use them to build a container and test the packages with the script **test-launch.sh**.
 
 ## How to test the scripts manually in a pod
 ### Set up the secrets and the pod
