@@ -1,6 +1,21 @@
 #!/bin/bash
 
 set -u
+set -x
+
+##
+# Set the test mode:
+# - staging, test from the docker's staging download website
+# - release, form docker's official public download website
+##
+TEST_MODE="${1:-staging}"
+
+echo "TEST_MODE=${TEST_MODE}"
+if [[ "$TEST_MODE" != "staging" && "$TEST_MODE" != "release" ]]; then
+    echo "Usage: staging | release"
+    exit 2
+fi
+
 
 # Path to the scripts
 SECONDS=0
@@ -34,9 +49,10 @@ source env.list
 source date.list
 export DATE
 
+
 # Test the packages
-echo "*** * Tests * ***"
-bash -x ${PATH_SCRIPTS}/test.sh staging
+echo "*** * Calling test.sh ${TEST_MODE} * ***"
+bash -x ${PATH_SCRIPTS}/test.sh ${TEST_MODE}
 
 # Check if there are errors in the tests : NOERR or ERR
 echo "*** ** Tests check ** ***"

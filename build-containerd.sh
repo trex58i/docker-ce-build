@@ -70,7 +70,7 @@ buildContainerd() {
   RET=$?
   if [[ $RET -ne 0 ]]
 	then
-	    # The Dockerfile and/or the test_launch.sh is/are missing
+	    # The Dockerfile and/or the test-launch.sh is/are missing
 	    echo "ERROR: the make command terminated with exit code:$RET"
   fi
 
