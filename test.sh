@@ -5,8 +5,8 @@
 # Usage: test.sh [local | staging | release]
 ##
 set -u
-
 set -o allexport
+
 source env.list
 
 # Function to create the directory if it does not exist
@@ -202,7 +202,7 @@ testDynamicPackages() {
   # Copying the errors.txt to the COS bucket
   cp ${PATH_ERRORS} ${PATH_ERRORS_COS}
 
-}#end: testDynamicPackages
+}
 
 
 ##
@@ -330,7 +330,7 @@ testStaticPackages() {
   [[ "$TEST_1_STATIC" -eq "0" ]] && [[ "$TEST_2_STATIC" -eq "0" ]] && [[ "$TEST_3_STATIC" -eq "0" ]]
   TEST_STATIC=$?
 
-}#end:testStaticPackages
+}
 
 
 ################################################################################
@@ -403,6 +403,7 @@ if [[ "$TEST_MODE" = "local" ]]; then
   testStaticPackages
 else
   echo "Skip test static for TEST_MODE: $TEST_MODE"
+  TEST_STATIC=0
 fi
 
 [[ "$TEST" -eq "0" ]] && [[ "$TEST_STATIC" -eq "0" ]]
