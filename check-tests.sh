@@ -11,6 +11,8 @@ source ${FILE_ENV}
 DIR_TEST="/workspace/tests"
 PATH_TEST_ERRORS="${DIR_TEST}/errors.txt"
 
+TEST_MODE="${1:-local}"
+
 # Check if there is a errors.txt file
 if ! test -f ${PATH_TEST_ERRORS}
 then
@@ -27,7 +29,15 @@ NB_TEST_LOGS=$(eval "find ${DIR_TEST}/test* | wc -l")
 echo "Nb of build logs : ${NB_BUILD_LOGS}"
 echo "Nb of test logs : ${NB_TEST_LOGS}"
 
-DISTROS=$(eval "echo $DEBS $RPMS alpine | tr '-' '_'")
+
+DISTROS=$(eval "echo $DEBS $RPMS | tr '-' '_'")
+
+if [[ "$TEST_MODE" = "local" ]]; then
+  DISTROS+=" alpine"
+else
+  echo "Skip test static for TEST_MODE: $TEST_MODE"
+fi
+
 echo "List of distros : ${DISTROS}"
 NB_DISTROS=$(eval "echo ${DISTROS} | wc -w")
 echo "Nb of distros : ${NB_DISTROS}"

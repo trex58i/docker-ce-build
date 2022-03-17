@@ -56,7 +56,7 @@ bash -x ${PATH_SCRIPTS}/test.sh ${TEST_MODE}
 
 # Check if there are errors in the tests : NOERR or ERR
 echo "*** ** Tests check ** ***"
-${PATH_SCRIPTS}/check-tests.sh
+${PATH_SCRIPTS}/check-tests.sh ${TEST_MODE}
 CHECK_TESTS_BOOL=`echo $?`
 echo "Exit code check : ${CHECK_TESTS_BOOL}"
 echo "The tests results : ${CHECK_TESTS_BOOL}"
