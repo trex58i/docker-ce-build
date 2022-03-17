@@ -63,13 +63,17 @@ ${PATH_SCRIPTS}/dockerctl.sh stop
 if [[ ${CHECK_TESTS_BOOL} -eq 0 ]]
 then
     echo "NO ERROR"
-    # Push to the COS Bucket according to CHECK_TESTS_BOOL
-    echo "*** *** Push to the COS Buckets *** ***"
-    ${PATH_SCRIPTS}/push-COS.sh
-
-    exit $?
-
 else
     echo "ERROR"
     exit 1
+fi
+
+if [[ ${DISABLE_PUSH_COS} = "1" ]]
+then
+    echo "Skip push to COS, DISABLE_PUSH_COS=${DISABLE_PUSH_COS}"
+else
+    # Push to the COS Bucket according to CHECK_TESTS_BOOL
+    echo "*** *** Push to the COS Buckets *** ***"
+    ${PATH_SCRIPTS}/push-COS.sh
+    exit $?
 fi
