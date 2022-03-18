@@ -15,6 +15,7 @@ URL_COS_PRIVATE="https://s3.us-south.cloud-object-storage.appdomain.cloud"
 
 FILE_ENV_PATH="${PATH_SCRIPTS}/env"
 FILE_ENV="env.list"
+DISABLE_DISTRO_DISCOVERY=0
 
 # Mount the COS bucket if not mounted
 if ! test -d ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}
@@ -35,7 +36,7 @@ cp ${FILE_ENV_PATH}/${FILE_ENV} /workspace/${FILE_ENV}
 set -o allexport
 source /workspace/${FILE_ENV}
 
-# Generate the list of distributions
+# Generate the list of distributions and populate docker-ce-packaging from git
 mkdir docker-ce-packaging
 pushd docker-ce-packaging
 git init
@@ -46,14 +47,22 @@ git checkout FETCH_HEAD
 make REF=${DOCKER_VERS} checkout
 popd
 
-# Get the distributions list in the docker-ce-packaging repository
-echo DEBS=\"`cd docker-ce-packaging/deb && ls -1d debian-* ubuntu-*`\" >> ${FILE_ENV}
-echo RPMS=\"`cd docker-ce-packaging/rpm && ls -1d centos-* fedora-*`\" >> ${FILE_ENV}
 
-#echo DEBS=\"ubuntu-bionic\" >> ${FILE_ENV}
-#echo RPMS=\"centos-8 fedora-34\" >> ${FILE_ENV}
+if [[ ${DISABLE_DISTRO_DISCOVERY} != "1" ]]
+then
+    echo "Discovering distribution list from git"
+    # Get the distributions list in the docker-ce-packaging repository
+    echo DEBS=\"`cd docker-ce-packaging/deb && ls -1d debian-* ubuntu-*`\" >> ${FILE_ENV}
+    echo RPMS=\"`cd docker-ce-packaging/rpm && ls -1d centos-* fedora-*`\" >> ${FILE_ENV}
+    source /workspace/${FILE_ENV}
+else
+    echo "Disable distribution discovery from git"
+fi
 
-source /workspace/${FILE_ENV}
+echo "- Using DEBS='$DEBS'"
+echo "- Using RPMS='$RPMS'"
+
+
 
 # Check if we have the env.list
 if ! test -f /workspace/${FILE_ENV}

@@ -9,12 +9,7 @@ source env.list
 
 PATH_COS="/mnt"
 PATH_PASSWORD="/root/.s3fs_cos_secret"
-
-COS_BUCKET_SHARED="ibm-docker-builds"
-URL_COS_SHARED="https://s3.us-east.cloud-object-storage.appdomain.cloud"
-
 PATH_DISTROS_MISSING="/workspace/distros-missing.txt"
-
 
 echo "- Push to ibm-docker-builds -"
 

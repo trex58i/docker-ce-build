@@ -114,12 +114,13 @@ for PACKTYPE in DEBS RPMS
 do
   for DISTRO in ${!PACKTYPE}
   do
-    echo "i : $i"
+    echo "Distro build count: $i"
+
     n=$(($i%4))
-    echo "n = $n"
+
     if [[ $n -eq "1" ]]
     then
-      echo "We initialise the pids"
+      echo "Ready to launch up to 4 builds in parallel"
       pids=()
     fi
 
@@ -130,8 +131,11 @@ do
 
     if [[ $i -eq $nb ]] || [[ $n -eq "0" ]]
     then
-      echo "We wait for the pids"
+      #TODO Improve this: we could wait for the 1st build to complete instead of
+      # waiting for all the 4 build see  'wait -n'. Or else rely on 'make -j'
+      echo "Waiting for the '${#pids[@]}' builds to complete"
       wait ${pids[@]}
+      echo "Wait completed"
     fi
 
     let "i=i+1"
