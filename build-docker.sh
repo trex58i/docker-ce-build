@@ -120,7 +120,7 @@ do
 
     if [[ $n -eq "1" ]]
     then
-      echo "Ready to launch up to 4 builds in parralel"
+      echo "Ready to launch up to 4 builds in parallel"
       pids=()
     fi
 
@@ -131,11 +131,11 @@ do
 
     if [[ $i -eq $nb ]] || [[ $n -eq "0" ]]
     then
-      #TODO Imrpove this: we could wait for the 1st build to complete instead of
+      #TODO Improve this: we could wait for the 1st build to complete instead of
       # waiting for all the 4 build see  'wait -n'. Or else rely on 'make -j'
       echo "Waiting for the '${#pids[@]}' builds to complete"
       wait ${pids[@]}
-      echo "Wait comleted"
+      echo "Wait completed"
     fi
 
     let "i=i+1"
