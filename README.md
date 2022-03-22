@@ -221,7 +221,7 @@ Explanations :
 
 ### Run the scripts
 
-Run **prow-build-docker.sh** or **prow-build-test-container.sh** except for the line calling **dockerctl.sh**. The **dockerd-entrypoint.sh** script has already been called as entrypoint of the pod, so it should not be called a second time.
+Run **prow-build-docker.sh** or **prow-build-test-containerd.sh** except for the line calling **dockerctl.sh**. The **dockerd-entrypoint.sh** script has already been called as entrypoint of the pod, so it should not be called a second time.
 
 ## How to test the whole prow job on a cluster
 
