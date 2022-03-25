@@ -58,9 +58,9 @@ buildContainerd() {
   fi
 
   MAKE_OPTS="REF=${CONTAINERD_VERS}"
-  if [[ ! -z "${GOLANG_VERSION}" ]]
+  if [[ ! -z "${CONTAINERD_GO_VERSION}" ]]
   then
-    MAKE_OPTS+=" GOLANG_VERSION=${GOLANG_VERSION}"
+    MAKE_OPTS+=" GOLANG_VERSION=${CONTAINERD_GO_VERSION}"
   fi
 
   echo "Calling make ${MAKE_OPTS} ${TARGET}"
