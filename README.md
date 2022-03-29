@@ -22,16 +22,16 @@ This postsubmit prow job is triggered by the editing of the [env.list](https://g
 - CONTAINERD_PACKAGING_REF : commit associated to the latest version of containerd
 - RUNC_VERS : runc version used to build the static packages
 
-This prow job builds the dynamic docker packages and then pushes them to our internal COS bucket, before editing this file [date.list](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/env/date.list) with the date. We use the date in the directory where we store the docker packages in the COS bucket, so that we don't confuse the different builds.
+This prow job builds the dynamic docker packages and then pushes them to our internal COS bucket, before creating the file 'env/date.list' which contains the current date (timestamp). We use the date in the directory where we store the docker packages in the COS bucket, so that we don't confuse the different builds.
 
 1. [Start the docker daemon](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prow-build-docker.sh#L20:L22)
 2. [Access to the internal COS Bucket and set up the environmental variables](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prow-build-docker.sh#L29:L34)
 3. [Build the dynamic and static docker packages](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prow-build-docker.sh#L36:L40)
-4. [Push to the github repository the date.list file](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prow-build-docker.sh#L48:L49)
+4. [Push to the github repository the timestamp content in to the job/postsubmit-build-docker file from the prow-job-tracking branch](https://github.com/ppc64le-cloud/docker-ce-build/blob/prow-job-tracking/job/postsubmit-build-docker)
 
 2. Second prow job : [postsubmit-build-container.yaml](https://github.com/florencepascual/test-infra/blob/postsubmit-docker-build/config/jobs/ppc64le-cloud/build-docker/postsubmit-build-containerd.yaml)
 
-This postsubmit prow job is triggered by the editing of the [date.list](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/env/date.list), which was edited at the end of the first prow job.
+This postsubmit prow job is triggered by the editing of the [job/postsubmit-build-docker](https://github.com/ppc64le-cloud/docker-ce-build/blob/prow-job-tracking/job/postsubmit-build-docker), which was edited at the end of the first prow job.
 This prow job builds the dynamic containerd packages (if CONTAINERD_BUILD is set to 1 in the [env.list](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/env/env.list)), the static packages, and tests all packages.
 
 1. [Start the docker daemon](https://github.com/ppc64le-cloud/docker-ce-build/blob/main/prow-build-docker.sh#L23:L25)
