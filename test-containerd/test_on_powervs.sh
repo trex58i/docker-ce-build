@@ -25,7 +25,7 @@ if [ "$RUNC_FLAVOR" == "crun" ] && [ "$TEST_RUNTIME" == "io.containerd.runc.v2" 
 elif [ "$RUNC_FLAVOR" == "runc" ]; then
 	export TEST_FLAG=""
 else
-	echo "Uncompatible option $RUNC_FLAVOR and $TEST_RUNTIME."; exit 1
+	echo "FAIL: Uncompatible option $RUNC_FLAVOR and $TEST_RUNTIME."; exit 1
 fi
 
 echo "==== BEGIN RUNC $RUNC_FLAVOR RUNTIME $TEST_RUNTIME ===="
