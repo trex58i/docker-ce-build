@@ -36,14 +36,14 @@ while [[ $# != 0 ]]; do
 		--output) OUTPUT=$2; shift; shift;;
 		--runc) RUNC_FLAVOR=$2; shift; shift;;
 		--runtime) TEST_RUNTIME=$2; shift; shift;;
-		*) echo "Unknown argument $1"; usage; exit 1;;
+		*) echo "FAIL: Unknown argument $1"; usage; exit 1;;
 	esac
 done
 
 # Ensure key, name and network are fulfilled
-if [ -z $SSH_KEY ]; then echo "Key not fulfilled."; usage; exit 1; fi
-if [ -z $NAME ]; then echo "Name not fulfilled."; usage; exit 1; fi
-if [ -z $NETWORK ]; then echo "Network not fulfilled."; usage; exit 1; fi
+if [ -z $SSH_KEY ]; then echo "FAIL: Key not fulfilled."; usage; exit 1; fi
+if [ -z $NAME ]; then echo "FAIL: Name not fulfilled."; usage; exit 1; fi
+if [ -z $NETWORK ]; then echo "FAIL: Network not fulfilled."; usage; exit 1; fi
 
 # Create a machine
 ibmcloud pi instance-create $NAME --image ubuntu_2004_containerd --key-name $SSH_KEY --memory 2 --processor-type shared --processors '0.25' --network $NETWORK --storage-type tier3
@@ -63,7 +63,7 @@ while [ $i -lt $TIMEOUT ] && [ -z "$(ibmcloud pi in $ID | grep 'External Address
   sleep 60
 done
 # Fail to connect
-if [ "$i" == "10" ]; then exit 1; fi
+if [ "$i" == "10" ]; then echo "FAIL: fail to get IP" ; exit 1; fi
 
 IP=$(ibmcloud pi in $ID | grep -Eo "External Address:[[:space:]]*[0-9.]+" | cut -d ' ' -f3)
 
@@ -79,7 +79,7 @@ do
   sleep 60
 done
 # Fail to connect
-if [ "$i" == "10" ]; then exit 1; fi
+if [ "$i" == "10" ]; then echo "FAIL: fail to connect to the VM" ; exit 1; fi
 
 # Get test script and execute it
 ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey wget https://raw.githubusercontent.com/ppc64le-cloud/docker-ce-build/main/test-containerd/test_on_powervs.sh
