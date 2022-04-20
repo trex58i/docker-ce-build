@@ -46,12 +46,16 @@ if [ -z $NAME ]; then echo "FAIL: Name not fulfilled."; usage; exit 1; fi
 if [ -z $NETWORK ]; then echo "FAIL: Network not fulfilled."; usage; exit 1; fi
 
 # Create a machine
-ibmcloud pi instance-create $NAME --image ubuntu_2004_containerd --key-name $SSH_KEY --memory 2 --processor-type shared --processors '0.25' --network $NETWORK --storage-type tier3
+# Sometime fail, but the machine is correctly instanciated
+ibmcloud pi instance-create $NAME --image ubuntu_2004_containerd --key-name $SSH_KEY --memory 2 --processor-type shared --processors '0.25' --network $NETWORK --storage-type tier3 || true
 
 # Wait it is registred
-sleep 60
+sleep 120
 # Get PID
 ID=$(ibmcloud pi ins | grep "$NAME" | cut -d ' ' -f1)
+
+# If no ID, stop with error
+if [ -z "$ID" ]; then echo "FAIL: fail to get ID. Probably VM has not started correctly."; exit 1; fi
 
 # Using ID, get IP
 # First, wait it starts
@@ -63,7 +67,7 @@ while [ $i -lt $TIMEOUT ] && [ -z "$(ibmcloud pi in $ID | grep 'External Address
   sleep 60
 done
 # Fail to connect
-if [ "$i" == "10" ]; then echo "FAIL: fail to get IP" ; exit 1; fi
+if [ "$i" == "$TIMEOUT" ]; then echo "FAIL: fail to get IP" ; exit 1; fi
 
 IP=$(ibmcloud pi in $ID | grep -Eo "External Address:[[:space:]]*[0-9.]+" | cut -d ' ' -f3)
 
@@ -78,8 +82,21 @@ do
   i=$((i+1))
   sleep 60
 done
-# Fail to connect
-if [ "$i" == "10" ]; then echo "FAIL: fail to connect to the VM" ; exit 1; fi
+# Fail to connect, try to reboot to bypass grub trouble
+if [ "$i" == "$TIMEOUT" ]; then
+  echo "Fail to get IP. Rebooting."
+  ibmcloud pi insrb $ID
+  # And try to connect again
+  j=0
+  while [ $j -lt $TIMEOUT ] && ! ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey echo OK
+  do
+    ssh-keyscan -t rsa $IP >> ~/.ssh/known_hosts
+    j=$((j+1))
+    sleep 60
+  done
+  # Fail again to connect
+  if [ "$j" == "$TIMEOUT" ]; then echo "FAIL: fail to connect to the VM" ; exit 1; fi
+fi
 
 # Get test script and execute it
 ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey wget https://raw.githubusercontent.com/ppc64le-cloud/docker-ce-build/main/test-containerd/test_on_powervs.sh
