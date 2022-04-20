@@ -88,7 +88,9 @@ if [ "$i" == "$TIMEOUT" ]; then
   ibmcloud pi insrb $ID
   # And try to connect again
   j=0
-  while [ $j -lt $TIMEOUT ] && [ -z "$(ibmcloud pi in $ID | grep 'External Address:')" ]; do
+  while [ $j -lt $TIMEOUT ] && ! ssh ubuntu@$IP -i /etc/ssh-volume/ssh-privatekey echo OK
+  do
+    ssh-keyscan -t rsa $IP >> ~/.ssh/known_hosts
     j=$((j+1))
     sleep 60
   done
