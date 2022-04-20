@@ -11,11 +11,6 @@ cd /home/containerd_test
 cd containerd/
 git pull
 
-# Change size of disk in a test (mkfs error in devmapper test)
-# See issue https://github.com/containerd/containerd/issues/6627
-sed -i "s/device1Size = 100000/device1Size = 400000/" ./snapshots/devmapper/pool_device_test.go
-sed -i "s/device2Size = 200000/device2Size = 800000/" ./snapshots/devmapper/pool_device_test.go
-
 # To syncronize gotestsum
 go mod vendor
 
