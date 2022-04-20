@@ -35,6 +35,7 @@ script/setup/install-seccomp
 if [ "$RUNC_FLAVOR" == "runc" ]; then
 	script/setup/install-runc
 elif [ "$RUNC_FLAVOR" == "crun" ]; then
+	apt update
 	apt-get install -y make git gcc build-essential pkgconf libtool \
 	  libsystemd-dev libprotobuf-c-dev libcap-dev libseccomp-dev libyajl-dev \
 	  go-md2man libtool autoconf python3 automake
