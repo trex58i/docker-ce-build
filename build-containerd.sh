@@ -46,7 +46,8 @@ buildContainerd() {
   DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
 
   TARGET="docker.io/library/${DISTRO_NAME}:${DISTRO_VERS}"
-  if [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:8* ]]
+
+  if [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:8 ]]
 	then
     ##
     # Switch to quay.io for CentOS 8 stream
@@ -55,6 +56,16 @@ buildContainerd() {
     echo "Switching to CentOS 8 stream and using quay.io"
 
     TARGET="quay.io/centos/centos:stream8"
+
+  elif [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:9 ]]
+	then
+    ##
+    # Switch to quay.io for CentOS 9 stream
+    # See https://github.com/docker/containerd-packaging/pull/283
+    ##
+    echo "Switching to CentOS 9 stream and using quay.io"
+
+    TARGET="quay.io/centos/centos:stream9"
   fi
 
   MAKE_OPTS="REF=${CONTAINERD_VERS}"

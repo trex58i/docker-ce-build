@@ -90,7 +90,7 @@ testDynamicPackages() {
 
   echo "### # Building the test image: ${IMAGE_NAME} # ###"
   # Building the test image
-  if [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:8* ]]
+  if [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:8 ]]
   then
     ##
     # Switch to quay.io for CentOS 8 stream
@@ -99,6 +99,15 @@ testDynamicPackages() {
     ##
     echo "Temporary fix: patching Dockerfile for using CentOS 8 stream and quay.io "
     sed -i 's/FROM ppc64le.*/FROM quay.io\/centos\/centos\:stream8/g' Dockerfile
+
+  elif [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:9 ]]
+  then
+    ##
+    # Switch to quay.io for CentOS 8 stream
+    # See https://github.com/docker/containerd-packaging/pull/283
+    ##
+    echo "Temporary fix: patching Dockerfile for using CentOS 9 stream and quay.io "
+    sed -i 's/FROM ppc64le.*/FROM quay.io\/centos\/centos\:stream9/g' Dockerfile
   fi
 
   BUILD_ARGS="--build-arg DISTRO_NAME=${DISTRO_NAME} --build-arg DISTRO_VERS=${DISTRO_VERS}"
