@@ -120,3 +120,11 @@ else
         done
     fi
 fi
+
+echo ""
+echo ""
+echo "---------------------------------------------------------"
+echo "COS bucket directory -> packages version :"
+echo "${DIR_CONTAINERD} -> containerd ${CONTAINERD_VERS}"
+echo "${DIR_DOCKER_SHARED} -> docker ${DOCKER_VERS}"
+echo "---------------------------------------------------------"
