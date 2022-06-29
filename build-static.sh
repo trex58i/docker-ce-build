@@ -22,8 +22,17 @@ fi
 
 echo "~~ Building static binaries ~~"
 pushd docker-ce-packaging/static
+
+echo "      make static-linux"
 VERSION=${DOCKER_VERS} CONTAINERD_VERSION=${CONTAINERD_VERS} RUNC_VERSION=${RUNC_VERS} make static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
+echo "      make static-linux : RC: $?"
+
 mkdir build/linux/tmp
+if [[ $? -ne 0 ]]
+then
+  echo "ERROR: Static binaries not built ('make static-linux' failed and build/linux has not been created)"
+  exit 1
+fi
 
 echo "~~~ Renaming the static binaries ~~~"
 # Copy the packages in a tmp directory
