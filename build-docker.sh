@@ -161,6 +161,11 @@ fi
 
 status_code="$(docker container wait ${CONT_NAME})"
 if [[ ${status_code} -ne 0 ]]; then
+  # Save static build logs
+  echo "==== Copying log to ${DIR_LOGS_COS} ===="
+  cp ${DIR_LOGS}/${STATIC_LOG} ${DIR_LOGS_COS}/${STATIC_LOG}
+  
+  # Note: Messages from build-static.sh and build-docker.sh are not always echoed by "docker logs" in temporal order
   echo "The static binaries build failed. See details from '${STATIC_LOG}'"
   docker logs ${CONT_NAME}
 else
