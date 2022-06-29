@@ -68,10 +68,10 @@ buildDocker() {
   then
     echo "Docker for ${DISTRO} built"
 
-    echo "== Copying dynamic docker packages to ${DIR_DOCKER} =="
+    echo "== Copying dynamic docker package bundles-ce-${DISTRO}-ppc64le.tar.gz to ${DIR_DOCKER} =="
     cp -r ${DIR}build/bundles-ce-${DISTRO}-ppc64le.tar.gz ${DIR_DOCKER}
 
-    echo "=== Copying packages to ${DIR_DOCKER_COS} ==="
+    echo "== Copying dynamic docker package bundles-ce-${DISTRO}-ppc64le.tar.gz to ${DIR_DOCKER_COS} =="
     cp -r ${DIR}build/bundles-ce-${DISTRO}-ppc64le.tar.gz ${DIR_DOCKER_COS}
 
     echo "== Copying log to ${DIR_LOGS_COS} =="
