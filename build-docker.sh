@@ -152,12 +152,27 @@ before_build=$SECONDS
 cd /workspace/docker-ce-packaging/static
 
 CONT_NAME=docker-build-static
+# https://quay.io/repository/powercloud/docker-ce-build?tab=tags
+QUAYIO_REPOSITORY="powercloud"
+# Test ! Test a new DockerInDocker image before pushing it to Raji's Production Cluster
+# https://quay.io/repository/trex58i/docker-ce-build?tab=tags
+QUAYIO_REPOSITORY="trex58i"
 if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
 then
-  docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --env PATH_SCRIPTS --env DOCKER_SECRET_AUTH --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build-static.sh
+  DOCKER_SECRET_AUTH_IN_ENV="--env DOCKER_SECRET_AUTH"
 else
-  docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --env PATH_SCRIPTS --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build-static.sh
+  DOCKER_SECRET_AUTH_IN_ENV=""
 fi
+docker run -d \
+           -v /workspace:/workspace \
+           -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} \
+           -v ${ARTIFACTS}:${ARTIFACTS} \
+           --env PATH_SCRIPTS \
+           ${DOCKER_SECRET_AUTH_IN_ENV} \
+           --privileged \
+           --name ${CONT_NAME} \
+           quay.io/${QUAYIO_REPOSITORY}/docker-ce-build \
+           ${PATH_SCRIPTS}/build-static.sh
 
 status_code="$(docker container wait ${CONT_NAME})"
 if [[ ${status_code} -ne 0 ]]; then
