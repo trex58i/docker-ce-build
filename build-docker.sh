@@ -156,7 +156,7 @@ CONT_NAME=docker-build-static
 QUAYIO_REPOSITORY="powercloud"
 # Test ! Test a new DockerInDocker image before pushing it to Raji's Production Cluster
 # https://quay.io/repository/trex58i/docker-ce-build?tab=tags
-QUAYIO_REPOSITORY="trex58i"
+#QUAYIO_REPOSITORY="trex58i"
 if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
 then
   DOCKER_SECRET_AUTH_IN_ENV="--env DOCKER_SECRET_AUTH"
