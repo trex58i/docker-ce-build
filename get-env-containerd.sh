@@ -43,15 +43,15 @@ echo "Temporary fix: patching test suite to use centos 7"
 sed -i 's/Centos="latest"/Centos="centos7"/g' ${PATH_DOCKERTEST}/dockertest/version/version.go
 
 # Get the docker-ce packages
-mkdir /workspace/docker-ce-${DOCKER_VERS}_${DATE}
-cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/build-docker-${DOCKER_VERS}_${DATE}/docker-ce-${DOCKER_VERS}/* /workspace/docker-ce-${DOCKER_VERS}_${DATE}
+mkdir /workspace/docker-ce-${DOCKER_REF}_${DATE}
+cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/build-docker-${DOCKER_REF}_${DATE}/docker-ce-${DOCKER_REF}/* /workspace/docker-ce-${DOCKER_REF}_${DATE}
 
 # Get the containerd packages if CONTAINERD_BUILD=0
 if [[ ${CONTAINERD_BUILD} = "0" ]]
 then
     echo "CONTAINERD_BUILD is set to 0, we copy the containerd packages from the COS bucket"
-    mkdir /workspace/containerd-${CONTAINERD_VERS}_${DATE}
-    cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-${CONTAINERD_VERS} /workspace/containerd-${CONTAINERD_VERS}_${DATE}
+    mkdir /workspace/containerd-${CONTAINERD_REF}_${DATE}
+    cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-${CONTAINERD_REF} /workspace/containerd-${CONTAINERD_REF}_${DATE}
 else
     echo "CONTAINERD_BUILD is set to 1"
 fi
@@ -64,7 +64,7 @@ then
 fi
 
 # Check if we have the docker packages
-if ! test -d /workspace/docker-ce-${DOCKER_VERS}_${DATE}
+if ! test -d /workspace/docker-ce-${DOCKER_REF}_${DATE}
 then
     echo "The docker packages have not been copied."
     exit 1
@@ -73,7 +73,7 @@ fi
 # Check if we have the containerd packages if CONTAINERD_BUILD is 0
 if [[ ${CONTAINERD_BUILD} = "0" ]]
 then
-    if test -d /workspace/containerd-${CONTAINERD_VERS}
+    if test -d /workspace/containerd-${CONTAINERD_REF}
     then
         echo "The containerd packages have been copied."
     else
