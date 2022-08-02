@@ -61,7 +61,7 @@ buildDocker() {
   PACKTYPE=$2
   PACKTYPE_TMP=${PACKTYPE,,}
   DIR=${PACKTYPE_TMP:0:3}
-  cd /workspace/docker-ce-packaging/${DIR} && VERSION=${DOCKER_VERS} make ${DIR}build/bundles-ce-${DISTRO}-ppc64le.tar.gz &> ${DIR_LOGS}/build_docker_${DISTRO}.log
+  cd /workspace/docker-ce-packaging/${DIR} && VERSION=${DOCKER_REF} make ${DIR}build/bundles-ce-${DISTRO}-ppc64le.tar.gz &> ${DIR_LOGS}/build_docker_${DISTRO}.log
 
   # Check if the dynamic docker package has been built
   if test -f ${DIR}build/bundles-ce-${DISTRO}-ppc64le.tar.gz
