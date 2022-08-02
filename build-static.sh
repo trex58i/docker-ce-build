@@ -27,15 +27,19 @@ echo "      make static-linux"
 echo "           DOCKER_REF    : ${DOCKER_REF}"
 echo "           CONTAINERD_REF: ${CONTAINERD_REF}"
 echo "           RUNC_VERS     : ${RUNC_VERS}"
-VERSION=${DOCKER_REF} CONTAINERD_VERSION=${CONTAINERD_REF} RUNC_VERSION=${RUNC_VERS} make static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
-echo "      make static-linux : RC: $?"
+DEBUG="-d"
+echo "           DEBUG         : ${DEBUG}"
 
-mkdir build/linux/tmp
+VERSION=${DOCKER_REF} CONTAINERD_VERSION=${CONTAINERD_REF} RUNC_VERSION=${RUNC_VERS} make ${DEBUG} static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
+echo "      make static-linux  : RC: $?"
+
 if [[ $? -ne 0 ]]
 then
   echo "ERROR: Static binaries not built ('make static-linux' failed and build/linux has not been created)"
   exit 1
 fi
+
+mkdir build/linux/tmp
 
 echo "~~~ Renaming the static binaries ~~~"
 # Copy the packages in a tmp directory
