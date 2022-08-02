@@ -67,14 +67,14 @@ testDynamicPackages() {
     # Copy the docker-ce packages
     cp ${DIR_DOCKER}/bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64*.tar.gz .
     # Copy the containerd packages (we have two different configurations depending on the package type)
-    CONTAINERD_VERS_2=$(echo ${CONTAINERD_VERS} | cut -d'v' -f2)
+    CONTAINERD_REF_2=$(echo ${CONTAINERD_REF} | cut -d'v' -f2)
     if [[ ${PACKTYPE} == "DEBS" ]]
     then
       # For the debian packages, we don't want the dbgsym package
-      cp ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io_${CONTAINERD_VERS_2}*_ppc64*.deb .
+      cp ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io_${CONTAINERD_REF_2}*_ppc64*.deb .
     elif [[ ${PACKTYPE} == "RPMS" ]]
     then
-      cp ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io-${CONTAINERD_VERS_2}*.ppc64*.rpm .
+      cp ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io-${CONTAINERD_REF_2}*.ppc64*.rpm .
     fi
 
     # Check if we have the docker-ce and containerd packages and the Dockerfile and the test-launch.sh
@@ -350,12 +350,12 @@ DIR_TEST="/workspace/tests"
 export DIR_TEST
 checkDirectory ${DIR_TEST}
 
-DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}_${DATE}"
-DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}_${DATE}"
+DIR_DOCKER="/workspace/docker-ce-${DOCKER_REF}_${DATE}"
+DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_REF}_${DATE}"
 
 PATH_DOCKERFILE="${PATH_SCRIPTS}/test"
 
-DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}_${DATE}"
+DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_REF}_${DATE}"
 
 DIR_TEST_COS="${DIR_COS_BUCKET}/tests"
 checkDirectory ${DIR_TEST_COS}
