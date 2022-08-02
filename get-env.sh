@@ -44,7 +44,7 @@ git remote add origin https://github.com/docker/docker-ce-packaging.git
 git fetch origin ${DOCKER_PACKAGING_REF}
 git checkout FETCH_HEAD
 
-make REF=${DOCKER_VERS} checkout
+make REF=${DOCKER_REF} checkout
 popd
 
 
@@ -71,11 +71,11 @@ then
     exit 1
 else
 # Check there are 6 env variables in env.list from github
-    if grep -Fq "DOCKER_VERS" ${FILE_ENV} && grep -Fq "DOCKER_PACKAGING_REF" ${FILE_ENV} && grep -Fq "CONTAINERD_BUILD" ${FILE_ENV} && grep -Fq "CONTAINERD_VERS" ${FILE_ENV} && grep -Fq "CONTAINERD_PACKAGING_REF" ${FILE_ENV} && grep -Fq "RUNC_VERS" ${FILE_ENV}
+    if grep -Fq "DOCKER_REF" ${FILE_ENV} && grep -Fq "DOCKER_PACKAGING_REF" ${FILE_ENV} && grep -Fq "CONTAINERD_BUILD" ${FILE_ENV} && grep -Fq "CONTAINERD_REF" ${FILE_ENV} && grep -Fq "CONTAINERD_PACKAGING_REF" ${FILE_ENV} && grep -Fq "RUNC_VERS" ${FILE_ENV}
     then
-        echo "DOCKER_VERS : ${DOCKER_VERS}, DOCKER_PACKAGING_REF : ${DOCKER_PACKAGING_REF}, CONTAINERD_BUILD : ${CONTAINERD_BUILD}, CONTAINERD_VERS : ${CONTAINERD_VERS}, CONTAINERD_PACKAGING_REF : ${CONTAINERD_PACKAGING_REF} and RUNC_VERS :${RUNC_VERS} are in env.list."
+        echo "DOCKER_REF : ${DOCKER_REF}, DOCKER_PACKAGING_REF : ${DOCKER_PACKAGING_REF}, CONTAINERD_BUILD : ${CONTAINERD_BUILD}, CONTAINERD_REF : ${CONTAINERD_REF}, CONTAINERD_PACKAGING_REF : ${CONTAINERD_PACKAGING_REF} and RUNC_VERS :${RUNC_VERS} are in env.list."
     else
-        echo "DOCKER_VERS, DOCKER_PACKAGING_REF, CONTAINERD_BUILD, CONTAINERD_VERS, CONTAINERD_PACKAGING_REF and/or RUNC_VERS are not in env.list."
+        echo "DOCKER_REF, DOCKER_PACKAGING_REF, CONTAINERD_BUILD, CONTAINERD_REF, CONTAINERD_PACKAGING_REF and/or RUNC_VERS are not in env.list."
         cat /workspace/${FILE_ENV}
         exit 1
     fi
