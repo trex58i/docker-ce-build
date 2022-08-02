@@ -134,7 +134,7 @@ then
   git fetch origin ${CONTAINERD_PACKAGING_REF}
   git checkout FETCH_HEAD
 
-  make REF=${CONTAINERD_VERS} checkout
+  make REF=${CONTAINERD_REF} checkout
 fi
 
 before=$SECONDS
@@ -149,7 +149,7 @@ do
       # Check if the package is there for this distribution
       echo "= Check containerd ="
 
-      DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}_${DATE}"
+      DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_REF}_${DATE}"
 
       DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
       DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
@@ -184,7 +184,7 @@ then
     git remote add origin https://github.com/docker/containerd-packaging.git
     git fetch origin ${CONTAINERD_PACKAGING_REF}
     git checkout FETCH_HEAD
-    make REF=${CONTAINERD_VERS} checkout
+    make REF=${CONTAINERD_REF} checkout
   fi
 
   while read -r line
