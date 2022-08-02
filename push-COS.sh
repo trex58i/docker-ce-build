@@ -18,18 +18,18 @@ mkdir -p ${PATH_COS}/s3_${COS_BUCKET_SHARED}
 s3fs ${COS_BUCKET_SHARED} ${PATH_COS}/s3_${COS_BUCKET_SHARED} -o url=${URL_COS_SHARED} -o passwd_file=${PATH_PASSWORD} -o ibm_iam_auth
 
 # Get the directory name ex: "docker-ce-20.10-11" (version without patch number then build tag)
-DIR_DOCKER_VERS=$(eval "echo ${DOCKER_REF} | cut -d'v' -f2 | cut -d'.' -f1-2")
+DIR_DOCKER_REF=$(eval "echo ${DOCKER_REF} | cut -d'v' -f2 | cut -d'.' -f1-2")
 echo "List of the directories beginning with docker-ce : "
 ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/docker-ce-*/
 if [[ $? -eq 0 ]]
 then
-    DOCKER_LAST_BUILD_TAG=$(ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/docker-ce-${DIR_DOCKER_VERS}-* | sort --version-sort | tail -1| cut -d'-' -f6)
+    DOCKER_LAST_BUILD_TAG=$(ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/docker-ce-${DIR_DOCKER_REF}-* | sort --version-sort | tail -1| cut -d'-' -f6)
     DOCKER_BUILD_TAG=$((DOCKER_LAST_BUILD_TAG+1))
 else
     # If there are no directories yet
     DOCKER_BUILD_TAG="1"
 fi
-DIR_DOCKER_SHARED=docker-ce-${DIR_DOCKER_VERS}-${DOCKER_BUILD_TAG}
+DIR_DOCKER_SHARED=docker-ce-${DIR_DOCKER_REF}-${DOCKER_BUILD_TAG}
 echo "Build tag : ${DOCKER_BUILD_TAG}"
 
 echo "Copy the docker-ce packages to the COS bucket"
@@ -48,18 +48,18 @@ then
     # We built a new version of containerd
 
     # Get the directory name ex: "containerd-1.4-9" (version without patch number then build tag)
-    DIR_CONTAINERD_VERS=$(eval "echo ${CONTAINERD_REF} | cut -d'v' -f2 | cut -d'.' -f1-2")
+    DIR_CONTAINERD_REF=$(eval "echo ${CONTAINERD_REF} | cut -d'v' -f2 | cut -d'.' -f1-2")
     echo "List of the directories beginning with containerd : "
     ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-*/
     if [[ $? -eq 0 ]]
     then
-        CONTAINERD_LAST_BUILD_TAG=$(ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-${DIR_CONTAINERD_VERS}-* | sort --version-sort | tail -1| cut -d'-' -f5)
+        CONTAINERD_LAST_BUILD_TAG=$(ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-${DIR_CONTAINERD_REF}-* | sort --version-sort | tail -1| cut -d'-' -f5)
         CONTAINERD_BUILD_TAG=$((CONTAINERD_LAST_BUILD_TAG+1))
     else
         # If there are no directories yet
         CONTAINERD_BUILD_TAG="1"
     fi
-    DIR_CONTAINERD=containerd-${DIR_CONTAINERD_VERS}-${CONTAINERD_BUILD_TAG}
+    DIR_CONTAINERD=containerd-${DIR_CONTAINERD_REF}-${CONTAINERD_BUILD_TAG}
     echo "Build tag : ${CONTAINERD_BUILD_TAG}"
 
     echo "Copy the containerd packages to the COS bucket"
@@ -80,19 +80,19 @@ else
         # distros-missing.txt exists
 
         # Get the directory name ex: "containerd-1.4-9" (version without patch number then build tag)
-        DIR_CONTAINERD_VERS=$(eval "echo ${CONTAINERD_REF} | cut -d'v' -f2 | cut -d'.' -f1-2")
+        DIR_CONTAINERD_REF=$(eval "echo ${CONTAINERD_REF} | cut -d'v' -f2 | cut -d'.' -f1-2")
 
         echo "List of the directories beginning with containerd : "
         ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-*/
         if [[ $? -eq 0 ]]
         then
-            CONTAINERD_LAST_BUILD_TAG=$(ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-${DIR_CONTAINERD_VERS}-* | sort --version-sort | tail -1| cut -d'-' -f5)
+            CONTAINERD_LAST_BUILD_TAG=$(ls -d ${PATH_COS}/s3_${COS_BUCKET_SHARED}/containerd-${DIR_CONTAINERD_REF}-* | sort --version-sort | tail -1| cut -d'-' -f5)
             CONTAINERD_BUILD_TAG=$((CONTAINERD_LAST_BUILD_TAG+1))
         else
             # If there are no directories yet
             CONTAINERD_BUILD_TAG="1"
         fi
-        DIR_CONTAINERD=containerd-${DIR_CONTAINERD_VERS}-${CONTAINERD_BUILD_TAG}
+        DIR_CONTAINERD=containerd-${DIR_CONTAINERD_REF}-${CONTAINERD_BUILD_TAG}
         echo "Build tag : ${CONTAINERD_BUILD_TAG}"
 
         while read -r line
