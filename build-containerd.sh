@@ -17,14 +17,14 @@ checkDirectory() {
   fi
 }
 
-DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}_${DATE}"
+DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_REF}_${DATE}"
 checkDirectory ${DIR_COS_BUCKET}
 
 if [[ ${CONTAINERD_BUILD} != "0" ]]
 then
-  DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}_${DATE}"
+  DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_REF}_${DATE}"
   checkDirectory ${DIR_CONTAINERD}
-  DIR_CONTAINERD_COS="${DIR_COS_BUCKET}/containerd-${CONTAINERD_VERS}"
+  DIR_CONTAINERD_COS="${DIR_COS_BUCKET}/containerd-${CONTAINERD_REF}"
   checkDirectory ${DIR_CONTAINERD_COS}
 fi
 
@@ -68,7 +68,7 @@ buildContainerd() {
     TARGET="quay.io/centos/centos:stream9"
   fi
 
-  MAKE_OPTS="REF=${CONTAINERD_VERS}"
+  MAKE_OPTS="REF=${CONTAINERD_REF}"
   if [[ ! -z "${CONTAINERD_GO_VERSION}" ]]
   then
     MAKE_OPTS+=" GOLANG_VERSION=${CONTAINERD_GO_VERSION}"
