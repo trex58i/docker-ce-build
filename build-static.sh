@@ -24,10 +24,10 @@ echo "~~ Building static binaries ~~"
 pushd docker-ce-packaging/static
 
 echo "      make static-linux"
-echo "           DOCKER_VERS   : ${DOCKER_VERS}"
-echo "           CONTAINERD_VER: ${CONTAINERD_VERS}"
+echo "           DOCKER_REF    : ${DOCKER_REF}"
+echo "           CONTAINERD_REF: ${CONTAINERD_REF}"
 echo "           RUNC_VERS     : ${RUNC_VERS}"
-VERSION=${DOCKER_VERS} CONTAINERD_VERSION=${CONTAINERD_VERS} RUNC_VERSION=${RUNC_VERS} make static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
+VERSION=${DOCKER_REF} CONTAINERD_VERSION=${CONTAINERD_REF} RUNC_VERSION=${RUNC_VERS} make static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
 echo "      make static-linux : RC: $?"
 
 mkdir build/linux/tmp
@@ -46,10 +46,10 @@ popd
 pushd docker-ce-packaging/static/build/linux/tmp
 FILES="*"
 # There is a mismatch between a version begining with "v" and files version not starting with "v". Don't know why...
-DOCKER_VERS_WITHOUT_V=`echo $DOCKER_VERS | sed "s/^v//"`
+DOCKER_VERSION=`echo $DOCKER_REF | sed "s/^v//"`
 for f in $FILES
 do
-  mv $f "${f//${DOCKER_VERS_WITHOUT_V}/ppc64le}"
+  mv $f "${f//${DOCKER_VERSION}/ppc64le}"
 done
 popd
 
