@@ -1,8 +1,8 @@
 #!/bin/bash
 # Script to get the env.list file and to generate the list of distros
-# The env.list would contain the DOCKER_VERS, the DOCKER_PACKAGING_REF, which is the commit associated to the version of docker,
+# The env.list would contain the DOCKER_REF, the DOCKER_PACKAGING_REF, which is the commit associated to the version of docker,
 # CONTAINERD_BUILD, which is set to 1 if there has been a new version of containerd released,
-# CONTAINERD_VERS, CONTAIINERD_PACKAGING_REF which is the commit associated to the version of containerd,
+# CONTAINERD_REF, CONTAINERD_PACKAGING_REF which is the commit associated to the version of containerd,
 # and RUNC_VERS, containing the version of runc used to build the static packages.
 
 set -eu
