@@ -17,13 +17,13 @@ checkDirectory() {
   fi
 }
 
-DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}_${DATE}"
+DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_REF}_${DATE}"
 checkDirectory ${DIR_COS_BUCKET}
 
-DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}_${DATE}"
+DIR_DOCKER="/workspace/docker-ce-${DOCKER_REF}_${DATE}"
 checkDirectory ${DIR_DOCKER}
 
-DIR_DOCKER_COS="${DIR_COS_BUCKET}/docker-ce-${DOCKER_VERS}"
+DIR_DOCKER_COS="${DIR_COS_BUCKET}/docker-ce-${DOCKER_REF}"
 checkDirectory ${DIR_DOCKER_COS}
 
 DIR_LOGS="/workspace/logs"
