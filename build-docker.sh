@@ -109,37 +109,56 @@ patchDockerFiles .
 cd /workspace
 
 before=$SECONDS
-i=1
+# 1) Build the list of distros
 for PACKTYPE in DEBS RPMS
 do
   for DISTRO in ${!PACKTYPE}
   do
-    echo "Distro build count: $i"
-
-    n=$(($i%4))
-
-    if [[ $n -eq "1" ]]
-    then
-      echo "Ready to launch up to 4 builds in parallel"
-      pids=()
-    fi
-
-    buildDocker ${DISTRO} ${PACKTYPE} &
-    declare "pid_$i=$(echo $!)"
-    var="pid_$i"
-    pids+=( ${!var} )
-
-    if [[ $i -eq $nb ]] || [[ $n -eq "0" ]]
-    then
-      #TODO Improve this: we could wait for the 1st build to complete instead of
-      # waiting for all the 4 build see  'wait -n'. Or else rely on 'make -j'
-      echo "Waiting for the '${#pids[@]}' builds to complete"
-      wait ${pids[@]}
-      echo "Wait completed"
-    fi
-
-    let "i=i+1"
+    echo "Distro / Packtype: ${DISTRO} / ${PACKTYPE}"
+    Dis+=( $DISTRO )
+    Pac+=( $PACKTYPE )
   done
+done
+nD=${#Dis[@]}
+echo "Number of distros: $nD"
+
+# 2) Launch builds and wait for them in parallel
+# Max number of builds running in parallel:
+max=4
+# Current number of builds being run:
+n=0
+# Distro index in the pids[] array:
+i=0
+while true
+do
+  while [ $n -lt $max ] && [ $i -lt ${nD} ]
+  do
+    buildDocker ${DISTRO} ${PACKTYPE} &
+    pids+=( $! )
+    echo "Build distrib: i:$i ${Dis[i]} pid:${pids[i]}"
+    let "n=n+1"
+    let "i=i+1"
+#    echo "i: $i  n: $n"
+  done
+#  echo "PIDs: ${pids[*]}"
+  for (( j=0 ; j<${#pids[@]} ; j++ ))
+  do
+    pid=${pids[j]}
+    if [ ${pid} -ne 0 ]
+    then
+      break
+    fi
+  done
+  echo "Waiting for '${pid}' '${Dis[j]}' build to complete"
+  wait ${pid}
+  echo "            '${pid}' '${Dis[j]}' build completed"
+  pids[j]=0
+  let "n=n-1"
+#  echo "i: $i  n: $n" 
+  if [ $n -eq 0 ]
+  then
+    break
+  fi
 done
 after=$SECONDS
 duration=$(expr $after - $before) && echo "DURATION TOTAL DOCKER : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
