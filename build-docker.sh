@@ -127,13 +127,13 @@ echo "Number of distros: $nD"
 max=4
 # Current number of builds being run:
 n=0
-# Distro index in the pids[] array:
+# Index of Distro & Build in the pids[] Dis[] and Pac[] arrays:
 i=0
 while true
 do
   while [ $n -lt $max ] && [ $i -lt ${nD} ]
   do
-    buildDocker ${DISTRO} ${PACKTYPE} &
+    buildDocker ${Dis[i]} ${Pac[i]} &
     pids+=( $! )
     echo "Build distrib: i:$i ${Dis[i]} pid:${pids[i]}"
     let "n=n+1"
