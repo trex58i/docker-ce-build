@@ -113,13 +113,27 @@ cd /workspace
 
 before=$SECONDS
 # 1) Build the list of distros
+# List of Distros that appear in the list though they are EOL or must not be built
+DisNo+=( "ubuntu-impish" )
 for PACKTYPE in DEBS RPMS
 do
   for DISTRO in ${!PACKTYPE}
   do
-    echo "Distro / Packtype: ${DISTRO} / ${PACKTYPE}"
-    Dis+=( $DISTRO )
-    Pac+=( $PACKTYPE )
+    No=0
+    for (( d=0 ; d<${#DisNo[@]} ; d++ ))
+    do
+      if [ ${DISTRO} == ${DisNo[d]} ]
+      then
+        No=1
+	      break
+      fi
+    done
+    if [ $No -eq 0 ]
+    then
+      echo "Distro / Packtype: ${DISTRO} / ${PACKTYPE}"
+      Dis+=( $DISTRO )
+      Pac+=( $PACKTYPE )
+    fi
   done
 done
 nD=${#Dis[@]}
