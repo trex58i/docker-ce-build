@@ -50,8 +50,12 @@ buildContainerd() {
 
   TARGET="docker.io/library/${DISTRO_NAME}:${DISTRO_VERS}"
 
+  # Create a directory for building in // the Distros
+  mkdir /workspace/containerd-packaging-${DISTRO}
+  cp -r /workspace/containerd-packaging-ref/* /workspace/containerd-packaging-${DISTRO}
+  
   if [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:8 ]]
-	then
+  then
     ##
     # Switch to quay.io for CentOS 8 stream
     # See https://github.com/docker/containerd-packaging/pull/263
@@ -61,7 +65,7 @@ buildContainerd() {
     TARGET="quay.io/centos/centos:stream8"
 
   elif [[ "${DISTRO_NAME}:${DISTRO_VERS}" == centos:9 ]]
-	then
+  then
     ##
     # Switch to quay.io for CentOS 9 stream
     # See https://github.com/docker/containerd-packaging/pull/283
@@ -78,8 +82,8 @@ buildContainerd() {
   fi
 
   echo "Calling make ${MAKE_OPTS} ${TARGET}"
-  cd /workspace/containerd-packaging &&\
-   make ${MAKE_OPTS} ${TARGET} > ${DIR_LOGS}/build_containerd_${DISTRO}.log 2>&1
+  cd /workspace/containerd-packaging-${DISTRO} && \
+    make ${MAKE_OPTS} ${TARGET} > ${DIR_LOGS}/build_containerd_${DISTRO}.log 2>&1
 
   RET=$?
   if [[ $RET -ne 0 ]]
@@ -130,8 +134,8 @@ if [[ ${CONTAINERD_BUILD} != "0" ]]
 then
   echo "= Cloning containerd-packaging ="
 
-  mkdir containerd-packaging
-  cd containerd-packaging
+  mkdir containerd-packaging-ref
+  cd containerd-packaging-ref
   git init
   git remote add origin https://github.com/docker/containerd-packaging.git
   git fetch origin ${CONTAINERD_PACKAGING_REF}
