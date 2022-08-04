@@ -49,7 +49,7 @@ popd
 # Rename the static binaries (replace the version with ppc64le)
 pushd docker-ce-packaging/static/build/linux/tmp
 FILES="*"
-# There is a mismatch between a version begining with "v" and files version not starting with "v". Don't know why...
+# A "tag" is identical to the version, plus a "v" at first.
 DOCKER_VERSION=`echo $DOCKER_REF | sed "s/^v//"`
 for f in $FILES
 do
