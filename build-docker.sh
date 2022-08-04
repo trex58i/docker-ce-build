@@ -6,6 +6,9 @@ set -u
 set -o allexport
 source env.list
 
+NCPUs=`grep processor /proc/cpuinfo | wc -l`
+echo "Nber of available processors: ${NCPUs}"
+
 # Function to create the directory if it does not exist
 checkDirectory() {
   if ! test -d $1
