@@ -7,7 +7,7 @@ set -o allexport
 source env.list
 
 NCPUs=`grep processor /proc/cpuinfo | wc -l`
-echo "Nber of available processors: ${NCPUs}"
+echo "Nber of available CPUs: ${NCPUs}"
 
 # Function to create the directory if it does not exist
 checkDirectory() {
@@ -127,7 +127,7 @@ echo "Number of distros: $nD"
 
 # 2) Launch builds and wait for them in parallel
 # Max number of builds running in parallel:
-max=4
+max=${NCPUs}
 # Current number of builds being run:
 n=0
 # Index of Distro & Build in the pids[] Dis[] and Pac[] arrays:
