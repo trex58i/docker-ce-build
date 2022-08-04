@@ -6,6 +6,9 @@ set -u
 set -o allexport
 source env.list
 
+NCPUs=`grep processor /proc/cpuinfo | wc -l`
+echo "Nber of available CPUs: ${NCPUs}"
+
 # Function to create the directory if it does not exist
 checkDirectory() {
   if ! test -d $1
@@ -138,33 +141,46 @@ then
 fi
 
 before=$SECONDS
+# 1) Build the list of distros
+# List of Distros that appear in the list though they are EOL or must not be built
+DisNo+=( "ubuntu-impish" )
+for PACKTYPE in DEBS RPMS
+do
+  for DISTRO in ${!PACKTYPE}
+  do
+    No=0
+    for (( d=0 ; d<${#DisNo[@]} ; d++ ))
+    do
+      if [ ${DISTRO} == ${DisNo[d]} ]
+      then
+        No=1
+	break
+      fi
+    done
+    if [ $No -eq 0 ]
+    then
+        echo "Distro: ${DISTRO}"
+        Dis+=( $DISTRO )
+    fi
+  done
+done
+nD=${#Dis[@]}
+echo "Number of distros: $nD"
+
 if [[ ${CONTAINERD_BUILD} != "0" ]]
 then
-  # 1) Build the list of distros
-  for PACKTYPE in DEBS RPMS
-  do
-    for DISTRO in ${!PACKTYPE}
-    do
-      echo "Distro / Packtype: ${DISTRO} / ${PACKTYPE}"
-      Dis+=( $DISTRO )
-      Pac+=( $PACKTYPE )
-    done
-  done
-  nD=${#Dis[@]}
-  echo "Number of distros: $nD"
-
   # 2) Launch builds and wait for them in parallel
   # Max number of builds running in parallel:
-  max=4
+  max=${NCPUs}
   # Current number of builds being run:
   n=0
-  # Index of Distro & Build in the pids[] Dis[] and Pac[] arrays:
+  # Index of Distro & Build in the pids[] Dis[] array:
   i=0
   while true
   do
     while [ $n -lt $max ] && [ $i -lt ${nD} ]
     do
-      buildContainerd ${Dis[i]}
+      buildContainerd ${Dis[i]} &
       pids+=( $! )
       echo "Build distrib: i:$i ${Dis[i]} pid:${pids[i]}"
       let "n=n+1"
@@ -193,31 +209,29 @@ then
   done
 else
   # Don't build
-  for PACKTYPE in DEBS RPMS
+  for (( d=0 ; d<${#Dis[@]} ; d++ ))
   do
-    for DISTRO in ${!PACKTYPE}
-    do
-      # Check if the package is there for this distribution
-      echo "= Check containerd ="
+    DISTRO=${Dis[d]}
+    # Check if the package is there for this distribution
+    echo "= Check containerd ="
 
-      DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_REF}_${DATE}"
+    DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_REF}_${DATE}"
 
-      DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
-      DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
+    DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
+    DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
 
-      if test -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+    if test -d ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}
+    then
+      echo "${DISTRO} already built"
+    else
+      echo "== ${DISTRO} missing =="
+      if ! test -f ${PATH_DISTROS_MISSING}
       then
-        echo "${DISTRO} already built"
-      else
-        echo "== ${DISTRO} missing =="
-        if ! test -f ${PATH_DISTROS_MISSING}
-        then
-          touch ${PATH_DISTROS_MISSING}
-        fi
-        # Add the distro to the distros-missing.txt
-        echo "${DISTRO}" >> ${PATH_DISTROS_MISSING}
+        touch ${PATH_DISTROS_MISSING}
       fi
-    done
+      # Add the distro to the distros-missing.txt
+      echo "${DISTRO}" >> ${PATH_DISTROS_MISSING}
+    fi
   done
 fi
 after=$SECONDS
