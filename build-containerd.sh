@@ -138,14 +138,65 @@ then
 fi
 
 before=$SECONDS
-for PACKTYPE in DEBS RPMS
-do
-  for DISTRO in ${!PACKTYPE}
+if [[ ${CONTAINERD_BUILD} != "0" ]]
+then
+  # 1) Build the list of distros
+  for PACKTYPE in DEBS RPMS
   do
-    if [[ ${CONTAINERD_BUILD} != "0" ]]
+    for DISTRO in ${!PACKTYPE}
+    do
+      echo "Distro / Packtype: ${DISTRO} / ${PACKTYPE}"
+      Dis+=( $DISTRO )
+      Pac+=( $PACKTYPE )
+    done
+  done
+  nD=${#Dis[@]}
+  echo "Number of distros: $nD"
+
+  # 2) Launch builds and wait for them in parallel
+  # Max number of builds running in parallel:
+  max=4
+  # Current number of builds being run:
+  n=0
+  # Index of Distro & Build in the pids[] Dis[] and Pac[] arrays:
+  i=0
+  while true
+  do
+    while [ $n -lt $max ] && [ $i -lt ${nD} ]
+    do
+      buildContainerd ${Dis[i]}
+      pids+=( $! )
+      echo "Build distrib: i:$i ${Dis[i]} pid:${pids[i]}"
+      let "n=n+1"
+      let "i=i+1"
+  #   echo "i: $i  n: $n"
+    done
+  # echo "PIDs: ${pids[*]}"
+    for (( j=0 ; j<${#pids[@]} ; j++ ))
+    do
+      pid=${pids[j]}
+      if [ ${pid} -ne 0 ]
+      then
+        break
+      fi
+    done
+    echo "Waiting for '${pid}' '${Dis[j]}' build to complete"
+    wait ${pid}
+    echo "            '${pid}' '${Dis[j]}' build completed"
+    pids[j]=0
+    let "n=n-1"
+  #  echo "i: $i  n: $n" 
+    if [ $n -eq 0 ]
     then
-      buildContainerd ${DISTRO}
-    else
+      break
+    fi
+  done
+else
+  # Don't build
+  for PACKTYPE in DEBS RPMS
+  do
+    for DISTRO in ${!PACKTYPE}
+    do
       # Check if the package is there for this distribution
       echo "= Check containerd ="
 
@@ -166,9 +217,9 @@ do
         # Add the distro to the distros-missing.txt
         echo "${DISTRO}" >> ${PATH_DISTROS_MISSING}
       fi
-    fi
+    done
   done
-done
+fi
 after=$SECONDS
 duration=$(expr $after - $before) && echo "DURATION TOTAL CONTAINERD : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
 
