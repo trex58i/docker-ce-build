@@ -125,7 +125,7 @@ do
       if [ ${DISTRO} == ${DisNo[d]} ]
       then
         No=1
-	      break
+        break
       fi
     done
     if [ $No -eq 0 ]
