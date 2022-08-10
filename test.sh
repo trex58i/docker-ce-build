@@ -40,6 +40,7 @@ checkFile() {
 testDynamicPackages() {
 
   begin=$SECONDS
+  DISTRO=$1
   echo "## Looking for ${DISTRO} ##"
   DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
   DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
@@ -446,7 +447,6 @@ while true
 do
   while [ $n -lt $max ] && [ $i -lt ${nD} ]
   do
-    DISTRO=${Dis[i]}
     testDynamicPackages ${Dis[i]} &
     pids+=( $! )
     echo "Test distrib: i:$i ${Dis[i]} pid:${pids[i]}"
