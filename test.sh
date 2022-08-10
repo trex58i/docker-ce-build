@@ -211,7 +211,7 @@ testDynamicPackages() {
   echo "TestDistroPackageCheck : ${TEST_3}" 2>&1 | tee -a ${PATH_ERRORS}
 
   [[ "$TEST_1" -eq "0" ]] && [[ "$TEST_2" -eq "0" ]] && [[ "$TEST_3" -eq "0" ]]
-  local TEST=$?
+  let "TEST_DYNAMIC=TEST_DYNAMIC+$?"
 
   # Copying the errors.txt to the COS bucket
   cp ${PATH_ERRORS} ${PATH_ERRORS_COS}
@@ -444,6 +444,8 @@ max=${NCPUs}
 n=0
 # Index of Distro & Tests in the pids[] Dis[] and Pac[] arrays:
 i=0
+# Cumulative test count for all Dynamic tests (0 : all OK, n>0 : not OK)
+TEST_DYNAMIC=0
 while true
 do
   while [ $n -lt $max ] && [ $i -lt ${nD} ]
@@ -488,7 +490,7 @@ else
   TEST_STATIC=0
 fi
 
-[[ "$TEST" -eq "0" ]] && [[ "$TEST_STATIC" -eq "0" ]]
+[[ "$TEST_DYNAMIC" -eq "0" ]] && [[ "$TEST_STATIC" -eq "0" ]]
 echo "All : $?" 2>&1 | tee -a ${PATH_ERRORS}
 
 # Copying the errors.txt to the COS bucket
