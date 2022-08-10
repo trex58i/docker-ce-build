@@ -9,6 +9,9 @@ set -o allexport
 
 source env.list
 
+NCPUs=`grep processor /proc/cpuinfo | wc -l`
+echo "Nber of available CPUs: ${NCPUs}"
+
 # Function to create the directory if it does not exist
 checkDirectory() {
   if ! test -d $1
@@ -51,9 +54,9 @@ testDynamicPackages() {
   export DISTRO_NAME
   export DISTRO_VERS
 
-  # Get in the tmp directory and get the docker-ce and containerd packages and the Dockerfile in it
-  checkDirectory tmp
-  pushd tmp
+  # Get in the tmp-${DISTRO} directory and get the docker-ce and containerd packages and the Dockerfile in it
+  checkDirectory tmp-${DISTRO}
+  pushd tmp-${DISTRO}
 
   cp ${PATH_DOCKERFILE}-${PACKTYPE}/Dockerfile .
   cp ${PATH_SCRIPTS}/test-launch.sh .
@@ -178,7 +181,7 @@ testDynamicPackages() {
   fi
 
   popd
-  rm -rf tmp
+  rm -rf tmp-${DISTRO}
 
   end=$SECONDS
   duration=$(expr $end - $begin)
@@ -220,6 +223,8 @@ testDynamicPackages() {
 ##
 testStaticPackages() {
 
+  begin=$SECONDS
+  
   DISTRO_NAME="alpine"
 
   IMAGE_NAME_STATIC="t-static_docker_${DISTRO_NAME}"
@@ -338,7 +343,6 @@ testStaticPackages() {
 
   [[ "$TEST_1_STATIC" -eq "0" ]] && [[ "$TEST_2_STATIC" -eq "0" ]] && [[ "$TEST_3_STATIC" -eq "0" ]]
   TEST_STATIC=$?
-
 }
 
 
@@ -396,16 +400,84 @@ fi
 
 
 echo "# Tests of the dynamic packages #"
+#for PACKTYPE in DEBS RPMS
+#do
+#  for DISTRO in ${!PACKTYPE}
+#  do
+#    testDynamicPackages
+#  done
+#done
+
+before=$SECONDS
+# 1) Build the list of distros
+# List of Distros that appear in the list though they are EOL or must not be built
+DisNo+=( "ubuntu-impish" "debian-buster" )
 for PACKTYPE in DEBS RPMS
 do
   for DISTRO in ${!PACKTYPE}
   do
-    testDynamicPackages
+    No=0
+    for (( d=0 ; d<${#DisNo[@]} ; d++ ))
+    do
+      if [ ${DISTRO} == ${DisNo[d]} ]
+      then
+        No=1
+	break
+      fi
+    done
+    if [ $No -eq 0 ]
+    then
+        echo "Distro: ${DISTRO}"
+        Dis+=( $DISTRO )
+    fi
   done
 done
+nD=${#Dis[@]}
+echo "Number of distros: $nD"
+
+# 2) Launch tests and wait for them in parallel
+# Max number of tests running in parallel:
+max=${NCPUs}
+# Current number of tests being run:
+n=0
+# Index of Distro & Tests in the pids[] Dis[] and Pac[] arrays:
+i=0
+while true
+do
+  while [ $n -lt $max ] && [ $i -lt ${nD} ]
+  do
+    DISTRO=${Dis[i]}
+    testDynamicPackages ${Dis[i]} &
+    pids+=( $! )
+    echo "Test distrib: i:$i ${Dis[i]} pid:${pids[i]}"
+    let "n=n+1"
+    let "i=i+1"
+#    echo "i: $i  n: $n"
+  done
+#  echo "PIDs: ${pids[*]}"
+  for (( j=0 ; j<${#pids[@]} ; j++ ))
+  do
+    pid=${pids[j]}
+    if [ ${pid} -ne 0 ]
+    then
+      break
+    fi
+  done
+  echo "Waiting for '${pid}' '${Dis[j]}' test to complete"
+  wait ${pid}
+  echo "            '${pid}' '${Dis[j]}' test completed"
+  pids[j]=0
+  let "n=n-1"
+#  echo "i: $i  n: $n" 
+  if [ $n -eq 0 ]
+  then
+    break
+  fi
+done
+after=$SECONDS
+duration=$(expr $after - $before) && echo "DURATION TOTAL CONTAINERD DISTROS TESTS : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
 
 
-begin=$SECONDS
 echo "# Tests for the static packages #"
 
 if [[ "$TEST_MODE" = "local" ]]; then
