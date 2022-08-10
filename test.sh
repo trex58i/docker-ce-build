@@ -39,18 +39,21 @@ checkFile() {
 ##
 testDynamicPackages() {
 
-  begin=$SECONDS
-  DISTRO=$1
+  local begin=$SECONDS
+  
+  local DISTRO=$1
+  local PACKTYPE=$2
+  
   echo "## Looking for ${DISTRO} ##"
-  DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
-  DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
+  local DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
+  local DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
 
   # Get all environment variables
-  IMAGE_NAME="t_docker_${DISTRO_NAME}_${DISTRO_VERS}"
-  CONT_NAME="t_docker_run_${DISTRO_NAME}_${DISTRO_VERS}"
-  BUILD_LOG="build_${DISTRO_NAME}_${DISTRO_VERS}.log"
-  TEST_LOG="test_${DISTRO_NAME}_${DISTRO_VERS}.log"
-  TEST_JUNIT="junit-tests-${DISTRO_NAME}-${DISTRO_VERS}.xml"
+  local IMAGE_NAME="t_docker_${DISTRO_NAME}_${DISTRO_VERS}"
+  local CONT_NAME="t_docker_run_${DISTRO_NAME}_${DISTRO_VERS}"
+  local BUILD_LOG="build_${DISTRO_NAME}_${DISTRO_VERS}.log"
+  local TEST_LOG="test_${DISTRO_NAME}_${DISTRO_VERS}.log"
+  local TEST_JUNIT="junit-tests-${DISTRO_NAME}-${DISTRO_VERS}.xml"
 
   export DISTRO_NAME
   export DISTRO_VERS
@@ -71,7 +74,7 @@ testDynamicPackages() {
     # Copy the docker-ce packages
     cp ${DIR_DOCKER}/bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64*.tar.gz .
     # Copy the containerd packages (we have two different configurations depending on the package type)
-    CONTAINERD_REF_2=$(echo ${CONTAINERD_REF} | cut -d'v' -f2)
+    local CONTAINERD_REF_2=$(echo ${CONTAINERD_REF} | cut -d'v' -f2)
     if [[ ${PACKTYPE} == "DEBS" ]]
     then
       # For the debian packages, we don't want the dbgsym package
@@ -87,9 +90,7 @@ testDynamicPackages() {
     then
       # The docker-ce packages and/or the containerd packages and/or the Dockerfile is/are missing
       echo "ERROR: The docker-ce packages and/or the containerd packages and/or the Dockerfile is/are missing"
-      continue
     fi
-
   fi
 
   echo "### # Building the test image: ${IMAGE_NAME} # ###"
@@ -114,7 +115,7 @@ testDynamicPackages() {
     sed -i 's/FROM ppc64le.*/FROM quay.io\/centos\/centos\:stream9/g' Dockerfile
   fi
 
-  BUILD_ARGS="--build-arg DISTRO_NAME=${DISTRO_NAME} --build-arg DISTRO_VERS=${DISTRO_VERS}"
+  local BUILD_ARGS="--build-arg DISTRO_NAME=${DISTRO_NAME} --build-arg DISTRO_VERS=${DISTRO_VERS}"
 
   if [[ "$TEST_MODE" = "staging" || "$TEST_MODE" = "release"  ]]; then
     echo "Setup REPO_HOSTNAME=${REPO_HOSTNAME}"
@@ -151,7 +152,7 @@ testDynamicPackages() {
     docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --env DISTRO_NAME --env DISTRO_VERS --env PATH_SCRIPTS --env DIR_TEST --privileged --name ${CONT_NAME} ${IMAGE_NAME}
   fi
 
-  status_code="$(docker container wait $CONT_NAME)"
+  local status_code="$(docker container wait $CONT_NAME)"
   docker logs $CONT_NAME > ${DIR_TEST}/${TEST_LOG} 2>&1
 
   if [[ ${status_code} -ne 0 ]]; then
@@ -184,8 +185,8 @@ testDynamicPackages() {
   popd
   rm -rf tmp-${DISTRO}
 
-  end=$SECONDS
-  duration=$(expr $end - $begin)
+  local end=$SECONDS
+  local duration=$(expr $end - $begin)
   echo "DURATION TEST ${DISTRO}: $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
 
   # Check the logs and get in the errors.txt a summary of the error logs
@@ -196,13 +197,13 @@ testDynamicPackages() {
   then
     echo "Dynamic packages" 2>&1 | tee -a ${PATH_ERRORS}
     # We get 4 exitCodes in the log (3 tests + the output of the first containing exitCode)
-    TEST_1=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==2' | rev | cut -d' ' -f 1")
-    TEST_2=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==3' | rev | cut -d' ' -f 1")
-    TEST_3=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==4' | rev | cut -d' ' -f 1")
+    local TEST_1=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==2' | rev | cut -d' ' -f 1")
+    local TEST_2=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==3' | rev | cut -d' ' -f 1")
+    local TEST_3=$(eval "cat ${DIR_TEST}/${TEST_LOG} | grep exitCode | awk 'NR==4' | rev | cut -d' ' -f 1")
   else
-    TEST_1=1
-    TEST_2=1
-    TEST_3=1
+    local TEST_1=1
+    local TEST_2=1
+    local TEST_3=1
   fi
 
   echo "TestDistro : ${TEST_1}" 2>&1 | tee -a ${PATH_ERRORS}
@@ -210,11 +211,10 @@ testDynamicPackages() {
   echo "TestDistroPackageCheck : ${TEST_3}" 2>&1 | tee -a ${PATH_ERRORS}
 
   [[ "$TEST_1" -eq "0" ]] && [[ "$TEST_2" -eq "0" ]] && [[ "$TEST_3" -eq "0" ]]
-  TEST=$?
+  local TEST=$?
 
   # Copying the errors.txt to the COS bucket
   cp ${PATH_ERRORS} ${PATH_ERRORS_COS}
-
 }
 
 
@@ -430,6 +430,7 @@ do
     then
         echo "Distro: ${DISTRO}"
         Dis+=( $DISTRO )
+	Pac+=( $PACKTYPE )
     fi
   done
 done
@@ -447,7 +448,7 @@ while true
 do
   while [ $n -lt $max ] && [ $i -lt ${nD} ]
   do
-    testDynamicPackages ${Dis[i]} &
+    testDynamicPackages ${Dis[i]} ${Pac[i]} &
     pids+=( $! )
     echo "Test distrib: i:$i ${Dis[i]} pid:${pids[i]}"
     let "n=n+1"
