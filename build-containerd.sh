@@ -43,12 +43,12 @@ PATH_DISTROS_MISSING="/workspace/distros-missing.txt"
 # $1 : distro
 buildContainerd() {
   echo "= Building containerd for $1 ="
-  build_before=$SECONDS
-  DISTRO=$1
-  DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
-  DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
+  local build_before=$SECONDS
+  local DISTRO=$1
+  local DISTRO_NAME="$(cut -d'-' -f1 <<<"${DISTRO}")"
+  local DISTRO_VERS="$(cut -d'-' -f2 <<<"${DISTRO}")"
 
-  TARGET="docker.io/library/${DISTRO_NAME}:${DISTRO_VERS}"
+  local TARGET="docker.io/library/${DISTRO_NAME}:${DISTRO_VERS}"
 
   # Create a directory for building in // the Distros
   mkdir /workspace/containerd-packaging-${DISTRO}
@@ -75,7 +75,7 @@ buildContainerd() {
     TARGET="quay.io/centos/centos:stream9"
   fi
 
-  MAKE_OPTS="REF=${CONTAINERD_REF}"
+  local MAKE_OPTS="REF=${CONTAINERD_REF}"
   if [[ ! -z "${CONTAINERD_GO_VERSION}" ]]
   then
     MAKE_OPTS+=" GOLANG_VERSION=${CONTAINERD_GO_VERSION}"
@@ -85,7 +85,7 @@ buildContainerd() {
   cd /workspace/containerd-packaging-${DISTRO} && \
     make ${MAKE_OPTS} ${TARGET} > ${DIR_LOGS}/build_containerd_${DISTRO}.log 2>&1
 
-  RET=$?
+  local RET=$?
   if [[ $RET -ne 0 ]]
 	then
 	    # The Dockerfile and/or the test-launch.sh is/are missing
@@ -125,8 +125,8 @@ buildContainerd() {
     cat ${DIR_LOGS}/build_containerd_${DISTRO}.log
     echo "== Log end for the build failure of ${DISTRO} =="
   fi
-  build_after=$SECONDS
-  build_duration=$(expr $build_after - $build_before) \
+  local build_after=$SECONDS
+  local build_duration=$(expr $build_after - $build_before) \
     && echo "DURATION BUILD containerd ${DISTRO} : $(($build_duration / 60)) minutes and $(($build_duration % 60)) seconds elapsed."
 }
 
