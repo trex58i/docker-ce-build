@@ -59,11 +59,11 @@ patchDockerFiles() {
 # $2 : DEBS or RPMS
 buildDocker() {
   echo "= Building docker for $1 ="
-  build_before=$SECONDS
-  DISTRO=$1
-  PACKTYPE=$2
-  PACKTYPE_TMP=${PACKTYPE,,}
-  DIR=${PACKTYPE_TMP:0:3}
+  local build_before=$SECONDS
+  local DISTRO=$1
+  local PACKTYPE=$2
+  local PACKTYPE_TMP=${PACKTYPE,,}
+  local DIR=${PACKTYPE_TMP:0:3}
   cd /workspace/docker-ce-packaging/${DIR} && VERSION=${DOCKER_REF} make ${DIR}build/bundles-ce-${DISTRO}-ppc64le.tar.gz &> ${DIR_LOGS}/build_docker_${DISTRO}.log
 
   # Check if the dynamic docker package has been built
@@ -99,8 +99,8 @@ buildDocker() {
 
   fi
 
-  build_after=$SECONDS
-  build_duration=$(expr $build_after - $build_before) && echo "DURATION BUILD docker ${DISTRO} : $(($build_duration / 60)) minutes and $(($build_duration % 60)) seconds elapsed."
+  local build_after=$SECONDS
+  local build_duration=$(expr $build_after - $build_before) && echo "DURATION BUILD docker ${DISTRO} : $(($build_duration / 60)) minutes and $(($build_duration % 60)) seconds elapsed."
 }
 
 echo "# Building dynamic docker packages #"
