@@ -52,6 +52,7 @@ fi
 
 script/setup/install-cni $(grep containernetworking/plugins go.mod | awk '{print $2}')
 script/setup/install-critools
+script/setup/install-failpoint-binaries
 script/setup/install-gotestsum
 unset GOFLAGS
 
