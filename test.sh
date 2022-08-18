@@ -63,6 +63,13 @@ testDynamicPackages() {
   pushd tmp-${DISTRO}
 
   cp ${PATH_DOCKERFILE}-${PACKTYPE}/Dockerfile .
+
+  # Workaround for builkit cache issue
+  # See https://github.com/moby/buildkit/issues/1368
+  PWD=`pwd`
+  echo "Debug: Touching $PWD/Dockerfile"
+  touch Dockerfile
+
   cp ${PATH_SCRIPTS}/test-launch.sh .
 
   ###
