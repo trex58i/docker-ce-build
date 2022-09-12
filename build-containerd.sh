@@ -141,6 +141,12 @@ then
   git fetch origin ${CONTAINERD_PACKAGING_REF}
   git checkout FETCH_HEAD
 
+
+  if [[ ! -z "${CONTAINERD_RUNC_REF}" ]]
+  then
+    export RUNC_REF=${CONTAINERD_RUNC_REF}
+  fi
+
   make REF=${CONTAINERD_REF} checkout
 fi
 
