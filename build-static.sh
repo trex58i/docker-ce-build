@@ -20,6 +20,19 @@ then
   echo "RUNC_VERS = ${RUNC_VERS}"
 fi
 
+##
+# Patch GO image so that we use bullseye instead of buster which is EOL
+##
+patchGoVersion() {
+  MKFILE_PATH=$1/Makefile
+
+  echo "Patching GO image from buster to bullseye for $MKFILE_PATH"
+  sed -ri  's/GO_VERSION\)\-buster/GO_VERSION\)\-bullseye/' $MKFILE_PATH
+}
+
+patchGoVersion docker-ce-packaging/deb
+patchGoVersion docker-ce-packaging/rpm
+
 echo "~~ Building static binaries ~~"
 pushd docker-ce-packaging/static
 
@@ -29,12 +42,6 @@ echo "           CONTAINERD_REF: ${CONTAINERD_REF}"
 echo "           RUNC_VERS     : ${RUNC_VERS}"
 DEBUG="-d"
 echo "           DEBUG         : ${DEBUG}"
-
-##
-# Patch GO image so that we use bullseye instead of buster which is EOL
-##
-echo "Patching GO image from buster to bullseye for Makefile"
-sed -ri  's/GO_VERSION\)\-buster/GO_VERSION\)\-bullseye/' Makefile
 
 # Launch the build:
 VERSION=${DOCKER_REF} CONTAINERD_VERSION=${CONTAINERD_REF} RUNC_VERSION=${RUNC_VERS} make ${DEBUG} static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
@@ -52,7 +59,8 @@ mkdir build/linux/tmp
 echo "~~~ Renaming the static binaries ~~~"
 # Copy the packages in a tmp directory
 cp build/linux/*.tgz build/linux/tmp
-popd
+
+popd  # docker-ce-packaging/static
 
 # Rename the static binaries (replace the version with ppc64le)
 pushd docker-ce-packaging/static/build/linux/tmp
