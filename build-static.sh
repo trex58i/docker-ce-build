@@ -27,7 +27,6 @@ echo "      make static-linux"
 echo "           DOCKER_REF    : ${DOCKER_REF}"
 echo "           CONTAINERD_REF: ${CONTAINERD_REF}"
 echo "           RUNC_VERS     : ${RUNC_VERS}"
-}"
 DEBUG="-d"
 echo "           DEBUG         : ${DEBUG}"
 
