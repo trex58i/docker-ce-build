@@ -271,8 +271,8 @@ ls ${DIR_DOCKER}/*
 if [[ $? -ne 0 ]]
 then
   # No docker-ce packages built
-  echo "No packages built for docker"
-  # exit 1
+  echo "No packages built for docker in ${DIR_DOCKER}"
+  exit 1
 else
   # Docker-ce packages built
   echo "Docker packages built"
