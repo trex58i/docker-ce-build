@@ -27,14 +27,24 @@ echo "      make static-linux"
 echo "           DOCKER_REF    : ${DOCKER_REF}"
 echo "           CONTAINERD_REF: ${CONTAINERD_REF}"
 echo "           RUNC_VERS     : ${RUNC_VERS}"
+echo "           GO_VERSION    : ${GO_VERSION}"
+}"
 DEBUG="-d"
 echo "           DEBUG         : ${DEBUG}"
 
-VERSION=${DOCKER_REF} CONTAINERD_VERSION=${CONTAINERD_REF} RUNC_VERSION=${RUNC_VERS} make ${DEBUG} static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
-echo "      make static-linux  : RC: $?"
+##
+# Patch GO image so that we use bullseye instead of buster which is EOL
+##
+echo "Patching GO image from buster to bullseye for Makefile"
+sed -ri  's/GO_VERSION\)\-buster/GO_VERSION\)\-bullseye/' Makefile
 
-if [[ $? -ne 0 ]]
+# Launch the build:
+VERSION=${DOCKER_REF} CONTAINERD_VERSION=${CONTAINERD_REF} RUNC_VERSION=${RUNC_VERS} make ${DEBUG} static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
+RC=$?
+
+if [[ $RC -ne 0 ]]
 then
+  echo "      make static-linux  : RC: $RC"
   echo "ERROR: Static binaries not built ('make static-linux' failed and build/linux has not been created)"
   exit 1
 fi
