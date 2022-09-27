@@ -33,6 +33,9 @@ patchGoVersion() {
 patchGoVersion docker-ce-packaging/deb
 patchGoVersion docker-ce-packaging/rpm
 
+echo "Search for buster anywhere"
+grep -r buster *
+
 echo "~~ Building static binaries ~~"
 pushd docker-ce-packaging/static
 
