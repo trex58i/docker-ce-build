@@ -213,6 +213,20 @@ then
 else
   DOCKER_SECRET_AUTH_IN_ENV=""
 fi
+echo "More trace for debugging static build issue: get full command line for running:"
+echo "    docker run [options] -ti quay.io/powercloud/docker-ce-build /bin/bash"
+echo "on fyre:focal1 ."
+echo "docker run -d \
+           -v /workspace:/workspace \
+           -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} \
+           -v ${ARTIFACTS}:${ARTIFACTS} \
+           --env PATH_SCRIPTS \
+           ${DOCKER_SECRET_AUTH_IN_ENV} \
+           --privileged \
+           --name ${CONT_NAME} \
+           quay.io/${QUAYIO_REPOSITORY}/docker-ce-build \
+           ${PATH_SCRIPTS}/build-static.sh"
+           
 docker run -d \
            -v /workspace:/workspace \
            -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} \
