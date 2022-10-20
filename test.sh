@@ -446,7 +446,9 @@ echo "Number of distros: $nD"
 
 # 2) Launch tests and wait for them in parallel
 # Max number of tests running in parallel:
-max=${NCPUs}
+let "max=${NCPUs}/2"
+echo "Max number of builds running in parallel: ${max}"
+
 # Current number of tests being run:
 n=0
 # Index of Distro & Tests in the pids[] Dis[] and Pac[] arrays:
